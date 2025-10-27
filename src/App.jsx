@@ -18,6 +18,7 @@ import ChatIA from './pages/ChatIA'
 import Planos from './pages/Planos'
 import EditarContrato from './pages/EditarContrato';
 import VisualizarContrato from './pages/VisualizarContrato';
+import Configuracoes from './pages/Configuracoes';
 // O BLOCO DE TESTE FOI MOVIDO DAQUI...
 
 const queryClient = new QueryClient({
@@ -316,6 +317,7 @@ function App() {
             <Route path="/contratos/criar" element={<CriarContrato />} />
             <Route path="/contratos/editar/:id" element={<EditarContrato />} />
             <Route path="/contratos/ver/:id" element={<VisualizarContrato />} />
+            <Route path="/configuracoes" element={<Configuracoes />} />
             
 
             {/* Adicione as rotas para Configuracoes e VisualizarContrato aqui */}
