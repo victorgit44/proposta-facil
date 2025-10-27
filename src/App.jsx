@@ -1,6 +1,11 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import Layout from './components/Layout' // ← ADICIONAR ESTA LINHA!
+
+// Importar páginas
+import CriarProposta from './pages/CriarProposta'
+import CriarContrato from './pages/CriarContrato'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -11,13 +16,13 @@ const queryClient = new QueryClient({
   },
 })
 
-// Páginas Simples
+// Páginas
 function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8">
+    <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-bold text-white mb-8">🏠 Página Inicial</h1>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Link to="/propostas">
             <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 hover:border-blue-500 transition cursor-pointer">
@@ -58,30 +63,28 @@ function HomePage() {
 
 function PropostasPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8">
+    <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-bold text-white mb-2">📄 Minhas Propostas</h1>
             <p className="text-slate-400">Gerencie suas propostas comerciais</p>
           </div>
-          <button className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition">
-            + Nova Proposta
-          </button>
+          <Link to="/propostas/criar">
+            <button className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition">
+              + Nova Proposta
+            </button>
+          </Link>
         </div>
 
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 text-center">
           <div className="text-6xl mb-4">📝</div>
           <h3 className="text-2xl font-bold text-white mb-2">Nenhuma proposta ainda</h3>
           <p className="text-slate-400 mb-6">Comece criando sua primeira proposta comercial</p>
-          <button className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
-            Criar Primeira Proposta
-          </button>
-        </div>
-
-        <div className="mt-6">
-          <Link to="/" className="text-blue-400 hover:text-blue-300">
-            ← Voltar ao Início
+          <Link to="/propostas/criar">
+            <button className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
+              Criar Primeira Proposta
+            </button>
           </Link>
         </div>
       </div>
@@ -91,30 +94,28 @@ function PropostasPage() {
 
 function ContratosPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8">
+    <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-bold text-white mb-2">📝 Meus Contratos</h1>
             <p className="text-slate-400">Gerencie seus contratos</p>
           </div>
-          <button className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-purple-800 transition">
-            + Novo Contrato
-          </button>
+          <Link to="/contratos/criar">
+            <button className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-purple-800 transition">
+              + Novo Contrato
+            </button>
+          </Link>
         </div>
 
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 text-center">
           <div className="text-6xl mb-4">📋</div>
           <h3 className="text-2xl font-bold text-white mb-2">Nenhum contrato ainda</h3>
           <p className="text-slate-400 mb-6">Comece criando seu primeiro contrato</p>
-          <button className="bg-purple-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-purple-700 transition">
-            Criar Primeiro Contrato
-          </button>
-        </div>
-
-        <div className="mt-6">
-          <Link to="/" className="text-blue-400 hover:text-blue-300">
-            ← Voltar ao Início
+          <Link to="/contratos/criar">
+            <button className="bg-purple-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-purple-700 transition">
+              Criar Primeiro Contrato
+            </button>
           </Link>
         </div>
       </div>
@@ -130,7 +131,7 @@ function ChatIAPage() {
 
   const sendMessage = () => {
     if (!input.trim()) return
-    
+
     setMessages([
       ...messages,
       { id: Date.now(), type: 'user', text: input },
@@ -140,13 +141,10 @@ function ChatIAPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col">
+    <div className="flex flex-col h-screen">
       <div className="bg-slate-800/50 border-b border-slate-700 p-4">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
+        <div className="max-w-4xl mx-auto">
           <h1 className="text-2xl font-bold text-white">💬 Chat com IA</h1>
-          <Link to="/" className="text-blue-400 hover:text-blue-300">
-            Voltar
-          </Link>
         </div>
       </div>
 
@@ -155,8 +153,8 @@ function ChatIAPage() {
           {messages.map(msg => (
             <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[70%] p-4 rounded-lg ${
-                msg.type === 'user' 
-                  ? 'bg-blue-600 text-white' 
+                msg.type === 'user'
+                  ? 'bg-blue-600 text-white'
                   : 'bg-slate-800 text-slate-100 border border-slate-700'
               }`}>
                 {msg.text}
@@ -212,14 +210,14 @@ function PlanosPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8">
+    <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold text-white mb-4">💎 Escolha seu plano ideal</h1>
           <p className="text-xl text-slate-400">Comece grátis e faça upgrade quando precisar</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {planos.map((plano, index) => (
             <div
               key={index}
@@ -232,14 +230,17 @@ function PlanosPage() {
                   ⭐ Mais Popular
                 </div>
               )}
-              
+
               <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${plano.color} flex items-center justify-center text-3xl mb-4`}>
                 {index === 0 ? '✨' : index === 1 ? '⚡' : '👑'}
               </div>
-              
+
               <h3 className="text-2xl font-bold text-white mb-2">{plano.nome}</h3>
-              <div className="text-4xl font-bold text-white mb-6">{plano.preco}<span className="text-lg text-slate-400">/mês</span></div>
-              
+              <div className="text-4xl font-bold text-white mb-6">
+                {plano.preco}
+                <span className="text-lg text-slate-400">/mês</span>
+              </div>
+
               <ul className="space-y-3 mb-8">
                 {plano.features.map((feature, i) => (
                   <li key={i} className="flex items-start gap-2 text-slate-300">
@@ -248,18 +249,12 @@ function PlanosPage() {
                   </li>
                 ))}
               </ul>
-              
+
               <button className={`w-full bg-gradient-to-r ${plano.color} text-white py-3 rounded-lg font-semibold hover:opacity-90 transition`}>
                 {index === 0 ? 'Começar Grátis' : 'Assinar Agora'}
               </button>
             </div>
           ))}
-        </div>
-
-        <div className="text-center">
-          <Link to="/" className="text-blue-400 hover:text-blue-300 text-lg">
-            ← Voltar ao Início
-          </Link>
         </div>
       </div>
     </div>
@@ -270,13 +265,17 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/propostas" element={<PropostasPage />} />
-          <Route path="/contratos" element={<ContratosPage />} />
-          <Route path="/chat-ia" element={<ChatIAPage />} />
-          <Route path="/planos" element={<PlanosPage />} />
-        </Routes>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/propostas" element={<PropostasPage />} />
+            <Route path="/propostas/criar" element={<CriarProposta />} />
+            <Route path="/contratos" element={<ContratosPage />} />
+            <Route path="/contratos/criar" element={<CriarContrato />} />
+            <Route path="/chat-ia" element={<ChatIAPage />} />
+            <Route path="/planos" element={<PlanosPage />} />
+          </Routes>
+        </Layout>
       </BrowserRouter>
     </QueryClientProvider>
   )
