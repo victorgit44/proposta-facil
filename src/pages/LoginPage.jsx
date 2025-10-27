@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // Certifique-se que Link está importado
 import { Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/api/supabaseClient'; // Importe o cliente Supabase
 
-// Ícones (LogoIcon, GoogleIcon) continuam os mesmos...
+// Ícones (LogoIcon, GoogleIcon)
 const LogoIcon = () => (
   <svg className="w-8 h-8 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M12 18.5l-2-1m2 1l2-1m-2 1V16M6 7l2 1m-2-1l2-1m-2 1V10M4 14l2-1m-2 1l2 1m-2-1V11.5" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M12 18.5l-2-1m2 1l2-1m-2 1V16M6 7l2 1m-2-1l2-1m-2 1V10M4 14l-2-1m-2 1l2 1m-2-1V11.5" />
   </svg>
 );
 const GoogleIcon = () => (
@@ -32,7 +32,7 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     try {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: email,
@@ -58,31 +58,26 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
-    
+
     try {
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          // Opcional: Especifique para onde redirecionar após o login do Google
-          // Se não especificado, usará as URLs configuradas no Supabase
-          // redirectTo: 'http://localhost:3000/' 
+          // redirectTo: 'http://localhost:3000/' // Opcional
         }
       });
 
       if (oauthError) {
         throw oauthError;
       }
-      
-      // O redirecionamento para o Google acontecerá automaticamente
-      // O usuário voltará para a aplicação e o Supabase cuidará da sessão
+
       console.log('Redirecionando para o Google...', data);
 
     } catch (err) {
       console.error('Erro no login com Google:', err);
       setError(err.message || 'Falha ao iniciar login com Google.');
-      setLoading(false); // Só desativa o loading se houver erro *antes* do redirect
-    } 
-    // Não colocamos setLoading(false) aqui porque a página será redirecionada
+      setLoading(false);
+    }
   };
 
 
@@ -96,7 +91,6 @@ export default function LoginPage() {
             <h2 className="mt-6 text-3xl font-bold tracking-tight text-white">Welcome back!</h2>
             <p className="mt-2 text-sm text-slate-400">
               Don't have an account yet?{' '}
-              {/* TODO: Criar a rota e página de SignUp */}
               <Link to="/signup" className="font-medium text-blue-500 hover:text-blue-400">
                 Sign up now
               </Link>
@@ -105,8 +99,8 @@ export default function LoginPage() {
 
           <div className="mt-8">
             <form onSubmit={handleLogin} className="space-y-6">
-              {/* Campos Email e Senha (iguais) */}
-               <div>
+              {/* Campos Email e Senha */}
+              <div>
                 <label htmlFor="email" className="block text-sm font-medium text-slate-300">
                   Email address
                 </label>
@@ -119,7 +113,7 @@ export default function LoginPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    disabled={loading} // Desabilita durante o loading
+                    disabled={loading}
                     className="block w-full appearance-none rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-white placeholder-slate-500 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm disabled:opacity-50"
                   />
                 </div>
@@ -138,8 +132,8 @@ export default function LoginPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    disabled={loading} // Desabilita durante o loading
-                    className="block w-full appearance-none rounded-md border border-slate-700 bg-slate-800 px-3 py-2 pr-10 text-white placeholder-slate-500 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm disabled:opacity-50" // Adicionado pr-10
+                    disabled={loading}
+                    className="block w-full appearance-none rounded-md border border-slate-700 bg-slate-800 px-3 py-2 pr-10 text-white placeholder-slate-500 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm disabled:opacity-50"
                   />
                   <button
                      type="button"
@@ -151,8 +145,8 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Remember me e Forgot Password (iguais) */}
-               <div className="flex items-center justify-between">
+              {/* Remember me e Forgot Password */}
+              <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <input
                     id="remember-me"
@@ -165,15 +159,16 @@ export default function LoginPage() {
                   </label>
                 </div>
 
+                {/* --- LINK CORRIGIDO --- */}
                 <div className="text-sm">
-                  {/* TODO: Implementar recuperação de senha */}
-                  <a href="#" className="font-medium text-blue-500 hover:text-blue-400">
+                  <Link to="/forgot-password" className="font-medium text-blue-500 hover:text-blue-400">
                     Forgot password?
-                  </a>
+                  </Link>
                 </div>
+                {/* --- FIM DA CORREÇÃO --- */}
               </div>
-              
-              {/* Exibe mensagem de erro */}
+
+              {/* Mensagem de Erro */}
               {error && (
                   <div className="rounded-md bg-red-900/30 p-4 border border-red-500/50">
                      <p className="text-sm text-red-400">{error}</p>
@@ -192,8 +187,8 @@ export default function LoginPage() {
               </div>
             </form>
 
-            {/* Separador OR e Botão Google (iguais) */}
-             <div className="mt-6">
+            {/* Separador OR e Botão Google */}
+            <div className="mt-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-slate-700" />
@@ -219,13 +214,13 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Lado Direito - Padrão Geométrico (igual) */}
-       <div className="relative hidden w-0 flex-1 lg:block bg-gradient-to-br from-slate-900 to-blue-900/30">
-         <div className="absolute inset-0 grid grid-cols-4 gap-4 opacity-10 p-4">
-             {[...Array(16)].map((_, i) => (
-               <div key={i} className="aspect-square bg-blue-700 rounded-lg animate-pulse" style={{ animationDelay: `${i * 50}ms` }}></div>
-             ))}
-         </div>
+      {/* Lado Direito - Padrão Geométrico */}
+      <div className="relative hidden w-0 flex-1 lg:block bg-gradient-to-br from-slate-900 to-blue-900/30">
+        <div className="absolute inset-0 grid grid-cols-4 gap-4 opacity-10 p-4">
+            {[...Array(16)].map((_, i) => (
+              <div key={i} className="aspect-square bg-blue-700 rounded-lg animate-pulse" style={{ animationDelay: `${i * 50}ms` }}></div>
+            ))}
+        </div>
       </div>
     </div>
   );

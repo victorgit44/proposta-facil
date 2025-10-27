@@ -7,6 +7,8 @@ import { queryClient } from './queryClient';
 // Layouts e Páginas Públicas
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import UpdatePasswordPage from './pages/UpdatePasswordPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 // import SignupPage from './pages/SignupPage'; // Descomente quando tiver
 import ProtectedRoute from './components/ProtectedRoute'; // Nosso guardião de rotas
 
@@ -285,6 +287,8 @@ function App() {
           {/* Rotas Públicas */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/update-password" element={<UpdatePasswordPage />} />
           {/* <Route path="/signup" element={<SignupPage />} /> */}
 
           {/* Rotas Protegidas (envolvidas pelo ProtectedRoute que inclui o Layout) */}
