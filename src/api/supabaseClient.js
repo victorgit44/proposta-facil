@@ -146,7 +146,7 @@ export const base44 = {
     Proposta: createOwnedEntityClient('propostas'),
     Contrato: createOwnedEntityClient('contratos'),
     ConfiguracaoEmpresa: createOwnedEntityClient('configuracoes_empresa'),
-    Assinatura: createGenericEntityClient('assinaturas'),
+    Assinatura: createOwnedEntityClient('assinaturas'),
   },
   auth: {
     me: async () => {
