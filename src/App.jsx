@@ -1,34 +1,37 @@
-import React from 'react'
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import Layout from './components/Layout' // ← ADICIONAR ESTA LINHA!
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './queryClient';
+// O AuthProvider já está no main.jsx, não precisa aqui
 
-// Importar páginas
-import CriarProposta from './pages/CriarProposta'
-import CriarContrato from './pages/CriarContrato'
+// Layouts e Páginas Públicas
+import LoginPage from './pages/LoginPage';
+// import SignupPage from './pages/SignupPage'; // Descomente quando tiver
+import ProtectedRoute from './components/ProtectedRoute'; // Nosso guardião de rotas
 
-// Adicione no início do arquivo, depois dos imports
-import { base44 } from "./api/supabaseClient";
-import Home from './pages/Home'
-import Propostas from './pages/Propostas'
-import VisualizarProposta from './pages/VisualizarProposta'
-import EditarProposta from './pages/EditarProposta' // Nova página
-import Contratos from './pages/Contratos'
-import ChatIA from './pages/ChatIA'
-import Planos from './pages/Planos'
-import EditarContrato from './pages/EditarContrato';
+// Páginas Protegidas (serão renderizadas pelo Outlet dentro do ProtectedRoute/Layout)
+import Home from './pages/Home';
+import Propostas from './pages/Propostas';
+import CriarProposta from './pages/CriarProposta';
+import VisualizarProposta from './pages/VisualizarProposta';
+import EditarProposta from './pages/EditarProposta';
+import Contratos from './pages/Contratos';
+import CriarContrato from './pages/CriarContrato';
 import VisualizarContrato from './pages/VisualizarContrato';
+import EditarContrato from './pages/EditarContrato';
+import ChatIA from './pages/ChatIA';
+import Planos from './pages/Planos';
 import Configuracoes from './pages/Configuracoes';
 // O BLOCO DE TESTE FOI MOVIDO DAQUI...
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-})
+// const queryClient = new QueryClient({
+//   defaultOptions: {
+//     queries: {
+//       refetchOnWindowFocus: false,
+//       retry: 1,
+//     },
+//   },
+// })
 
 // Páginas
 function HomePage() {
@@ -274,59 +277,38 @@ function PlanosPage() {
 }
 
 function App() {
-
-  // ==========================================================
-  // O CÓDIGO DE TESTE FOI MOVIDO PARA CÁ (DENTRO DA FUNÇÃO App)
-  // ==========================================================
-  React.useEffect(() => {
-    async function testarConexao() {
-      try {
-        const user = await base44.auth.me()
-        console.log('✅ Usuário:', user)
-
-        const propostas = await base44.entities.Proposta.list()
-        console.log('✅ Propostas:', propostas)
-
-        console.log('🎉 Conexão com Supabase funcionando!')
-      } catch (error) {
-        console.error('❌ Erro na conexão:', error)
-      }
-    }
-
-    testarConexao()
-  }, [])
-
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Layout>
-          <Routes>
-            {/* Rotas Principais */}
+        <Routes>
+          {/* Rotas Públicas */}
+          <Route path="/login" element={<LoginPage />} />
+          {/* <Route path="/signup" element={<SignupPage />} /> */}
+
+          {/* Rotas Protegidas (envolvidas pelo ProtectedRoute que inclui o Layout) */}
+          <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Home />} />
             <Route path="/planos" element={<Planos />} />
             <Route path="/chat-ia" element={<ChatIA />} />
-
-            {/* Rotas de Proposta */}
             <Route path="/propostas" element={<Propostas />} />
             <Route path="/propostas/criar" element={<CriarProposta />} />
             <Route path="/propostas/ver/:id" element={<VisualizarProposta />} />
             <Route path="/propostas/editar/:id" element={<EditarProposta />} />
-
-            {/* Rotas de Contrato */}
             <Route path="/contratos" element={<Contratos />} />
             <Route path="/contratos/criar" element={<CriarContrato />} />
-            <Route path="/contratos/editar/:id" element={<EditarContrato />} />
             <Route path="/contratos/ver/:id" element={<VisualizarContrato />} />
+            <Route path="/contratos/editar/:id" element={<EditarContrato />} />
             <Route path="/configuracoes" element={<Configuracoes />} />
-            
+            {/* Adicione outras rotas protegidas aqui */}
+          </Route>
 
-            {/* Adicione as rotas para Configuracoes e VisualizarContrato aqui */}
+          {/* Rota Catch-all (Opcional - redireciona para login se rota não existir) */}
+          {/* <Route path="*" element={<Navigate to="/login" replace />} /> */}
 
-          </Routes>
-        </Layout>
+        </Routes>
       </BrowserRouter>
     </QueryClientProvider>
-  )
+  );
 }
 
-export default App
+export default App;
