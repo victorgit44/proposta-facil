@@ -44,6 +44,18 @@ const createEntityClient = (tableName) => {
       return data || []
     },
 
+    // 👇 ADICIONE ESTA NOVA FUNÇÃO 'GET'
+    get: async (id) => {
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('*')
+        .eq('id', id)
+        .single() // .single() pega um único registro ou dá erro se não achar
+
+      if (error) throw error
+      return data
+    },
+
     create: async (data) => {
       const { data: result, error } = await supabase
         .from(tableName)
