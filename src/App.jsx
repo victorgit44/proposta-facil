@@ -7,6 +7,17 @@ import Layout from './components/Layout' // ← ADICIONAR ESTA LINHA!
 import CriarProposta from './pages/CriarProposta'
 import CriarContrato from './pages/CriarContrato'
 
+// Adicione no início do arquivo, depois dos imports
+import { base44 } from "./api/supabaseClient";
+import Home from './pages/Home'
+import Propostas from './pages/Propostas'
+import VisualizarProposta from './pages/VisualizarProposta'
+import EditarProposta from './pages/EditarProposta' // Nova página
+import Contratos from './pages/Contratos'
+import ChatIA from './pages/ChatIA'
+import Planos from './pages/Planos'
+// O BLOCO DE TESTE FOI MOVIDO DAQUI...
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -152,11 +163,10 @@ function ChatIAPage() {
         <div className="max-w-4xl mx-auto space-y-4">
           {messages.map(msg => (
             <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[70%] p-4 rounded-lg ${
-                msg.type === 'user'
+              <div className={`max-w-[70%] p-4 rounded-lg ${msg.type === 'user'
                   ? 'bg-blue-600 text-white'
                   : 'bg-slate-800 text-slate-100 border border-slate-700'
-              }`}>
+                }`}>
                 {msg.text}
               </div>
             </div>
@@ -221,9 +231,8 @@ function PlanosPage() {
           {planos.map((plano, index) => (
             <div
               key={index}
-              className={`bg-slate-800/50 border-2 ${
-                plano.popular ? 'border-blue-500 scale-105' : 'border-slate-700'
-              } rounded-xl p-8 relative hover:border-blue-400 transition`}
+              className={`bg-slate-800/50 border-2 ${plano.popular ? 'border-blue-500 scale-105' : 'border-slate-700'
+                } rounded-xl p-8 relative hover:border-blue-400 transition`}
             >
               {plano.popular && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
@@ -262,18 +271,50 @@ function PlanosPage() {
 }
 
 function App() {
+
+  // ==========================================================
+  // O CÓDIGO DE TESTE FOI MOVIDO PARA CÁ (DENTRO DA FUNÇÃO App)
+  // ==========================================================
+  React.useEffect(() => {
+    async function testarConexao() {
+      try {
+        const user = await base44.auth.me()
+        console.log('✅ Usuário:', user)
+
+        const propostas = await base44.entities.Proposta.list()
+        console.log('✅ Propostas:', propostas)
+
+        console.log('🎉 Conexão com Supabase funcionando!')
+      } catch (error) {
+        console.error('❌ Erro na conexão:', error)
+      }
+    }
+
+    testarConexao()
+  }, [])
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Layout>
           <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/propostas" element={<PropostasPage />} />
+            {/* Rotas Principais */}
+            <Route path="/" element={<Home />} />
+            <Route path="/planos" element={<Planos />} />
+            <Route path="/chat-ia" element={<ChatIA />} />
+
+            {/* Rotas de Proposta */}
+            <Route path="/propostas" element={<Propostas />} />
             <Route path="/propostas/criar" element={<CriarProposta />} />
-            <Route path="/contratos" element={<ContratosPage />} />
+            <Route path="/propostas/ver/:id" element={<VisualizarProposta />} />
+            <Route path="/propostas/editar/:id" element={<EditarProposta />} />
+
+            {/* Rotas de Contrato */}
+            <Route path="/contratos" element={<Contratos />} />
             <Route path="/contratos/criar" element={<CriarContrato />} />
-            <Route path="/chat-ia" element={<ChatIAPage />} />
-            <Route path="/planos" element={<PlanosPage />} />
+
+            {/* Adicione as rotas para Configuracoes e VisualizarContrato aqui */}
+
           </Routes>
         </Layout>
       </BrowserRouter>
