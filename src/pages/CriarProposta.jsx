@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react'
-import { base44 } from '@/api/mockBase44Client'
+import { base44 } from '@/api/supabaseClient' // Use o cliente real!
+import { queryClient } from '@/queryClient'
 
 export default function CriarProposta() {
   const navigate = useNavigate()
@@ -70,6 +71,7 @@ export default function CriarProposta() {
         ...formData,
         valor_total: valorTotal
       })
+      queryClient.invalidateQueries({ queryKey: ['propostas'] }) // <-- ADICIONE ISSO
       alert('Proposta criada com sucesso!')
       navigate('/propostas')
     } catch (error) {
