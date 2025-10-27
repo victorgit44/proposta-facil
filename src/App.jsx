@@ -16,6 +16,8 @@ import EditarProposta from './pages/EditarProposta' // Nova página
 import Contratos from './pages/Contratos'
 import ChatIA from './pages/ChatIA'
 import Planos from './pages/Planos'
+import EditarContrato from './pages/EditarContrato';
+import VisualizarContrato from './pages/VisualizarContrato';
 // O BLOCO DE TESTE FOI MOVIDO DAQUI...
 
 const queryClient = new QueryClient({
@@ -312,6 +314,9 @@ function App() {
             {/* Rotas de Contrato */}
             <Route path="/contratos" element={<Contratos />} />
             <Route path="/contratos/criar" element={<CriarContrato />} />
+            <Route path="/contratos/editar/:id" element={<EditarContrato />} />
+            <Route path="/contratos/ver/:id" element={<VisualizarContrato />} />
+            
 
             {/* Adicione as rotas para Configuracoes e VisualizarContrato aqui */}
 

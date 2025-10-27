@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Save, Plus, Trash2, Loader2 } from 'lucide-react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { ArrowLeft, Save, Plus, Trash2, Loader2, AlertCircle } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { base44 } from '@/api/supabaseClient'
 import { queryClient } from '@/queryClient'
-import { ContractCard } from '../components/ContractCard'
-// Estado inicial do formulário
+
+// Estado inicial vazio
 const initialState = {
-  numero_contrato: `CONT-${Date.now().toString().slice(-6)}`,
+  numero_contrato: '',
   tipo_contrato: 'prestacao_servicos',
   status: 'rascunho',
   contratante_nome: '',
@@ -15,11 +15,11 @@ const initialState = {
   contratante_endereco: '',
   contratante_email: '',
   contratante_telefone: '',
-  contratado_nome: '', // Será preenchido pelo hook
-  contratado_cpf_cnpj: '', // Será preenchido pelo hook
-  contratado_endereco: '', // Será preenchido pelo hook
-  contratado_email: '', // Será preenchido pelo hook
-  contratado_telefone: '', // Será preenchido pelo hook
+  contratado_nome: '',
+  contratado_cpf_cnpj: '',
+  contratado_endereco: '',
+  contratado_email: '',
+  contratado_telefone: '',
   objeto_contrato: '',
   valor_contrato: 0,
   forma_pagamento: '',
@@ -27,42 +27,61 @@ const initialState = {
   data_inicio: '',
   data_termino: '',
   clausulas_adicionais: '',
-  testemunhas: [], // Começa vazio
+  testemunhas: [],
 }
 
-export default function CriarContrato() {
+// Helper para formatar data para yyyy-MM-dd (input type="date")
+const formatDateForInput = (dateString) => {
+  if (!dateString) return '';
+  try {
+    return new Date(dateString).toISOString().split('T')[0];
+  } catch (e) {
+    return ''; // Retorna vazio se a data for inválida
+  }
+}
+
+export default function EditarContrato() {
   const navigate = useNavigate()
+  const { id } = useParams() // Pega o ID da URL
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState(initialState)
 
-  // Busca os dados da empresa para preencher o "Contratado"
-  const { data: config, isLoading: isLoadingConfig } = useQuery({
-    queryKey: ['configuracao'],
-    queryFn: async () => {
-      const data = await base44.entities.ConfiguracaoEmpresa.list();
-      return data[0] || {};
-    }
+  // 1. BUSCAR OS DADOS DO CONTRATO
+  const {
+    data: contrato,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['contrato', id], // Usa o ID na chave
+    queryFn: () => base44.entities.Contrato.get(id),
+    enabled: !!id, // Só roda se tiver ID
   })
 
-  // Preenche os dados do contratado quando a config carregar
+  // 2. PREENCHER O FORMULÁRIO QUANDO OS DADOS CHEGAREM
   useEffect(() => {
-    if (config) {
-      setFormData(prev => ({
-        ...prev,
-        contratado_nome: config.nome_empresa || '',
-        contratado_cpf_cnpj: config.cnpj || '',
-        contratado_endereco: config.endereco || '',
-        contratado_email: config.email_empresa || '',
-        contratado_telefone: config.telefone_empresa || '',
-      }))
+    if (contrato) {
+      setFormData({
+        ...contrato,
+        // Garante que o valor é numérico ou 0
+        valor_contrato: parseFloat(contrato.valor_contrato) || 0,
+        // Formata as datas para o input type="date"
+        data_inicio: formatDateForInput(contrato.data_inicio),
+        data_termino: formatDateForInput(contrato.data_termino),
+        // Garante que testemunhas é um array
+        testemunhas: Array.isArray(contrato.testemunhas) ? contrato.testemunhas : [],
+      })
     }
-  }, [config])
+  }, [contrato])
 
+
+  // ==========================================
+  // Funções handleChange, testemunhas, etc.
+  // SÃO IDÊNTICAS AO CriarContrato.jsx
+  // ==========================================
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  // --- Handlers para Testemunhas ---
   const handleTestemunhaChange = (index, field, value) => {
     const newTestemunhas = [...formData.testemunhas]
     newTestemunhas[index][field] = value
@@ -80,29 +99,37 @@ export default function CriarContrato() {
     const newTestemunhas = formData.testemunhas.filter((_, i) => i !== index)
     setFormData(prev => ({ ...prev, testemunhas: newTestemunhas }))
   }
-  // --- Fim dos Handlers de Testemunhas ---
+  // --- Fim Handlers Testemunhas ---
 
+
+  // 3. ATUALIZAR A FUNÇÃO handleSubmit PARA USAR '.update()'
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSaving(true)
 
     try {
-      await base44.entities.Contrato.create({
+      await base44.entities.Contrato.update(id, { // <-- MUDOU AQUI
         ...formData,
         valor_contrato: parseFloat(formData.valor_contrato) || 0
       })
       
-      queryClient.invalidateQueries({ queryKey: ['contratos'] })
-      alert('Contrato criado com sucesso!')
+      // Invalida a lista E o contrato específico
+      queryClient.invalidateQueries({ queryKey: ['contratos'] }) 
+      queryClient.invalidateQueries({ queryKey: ['contrato', id] }) 
+      
+      alert('Contrato atualizado com sucesso!')
       navigate('/contratos')
     } catch (error) {
-      alert('Erro ao criar contrato: ' + error.message)
+      alert('Erro ao atualizar contrato: ' + error.message)
     } finally {
       setSaving(false)
     }
   }
 
-  if (isLoadingConfig) {
+  // ==========================================
+  // Loading e Error States
+  // ==========================================
+  if (isLoading) {
      return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 size={48} className="text-purple-500 animate-spin" />
@@ -110,10 +137,26 @@ export default function CriarContrato() {
     )
   }
 
+   if (error) {
+    return (
+      <div className="flex flex-col justify-center items-center h-screen text-red-400">
+        <AlertCircle size={48} className="mb-4" />
+        <p className="text-xl mb-4">Erro ao carregar contrato: {error.message}</p>
+        <button onClick={() => navigate('/contratos')} className="text-blue-400">
+          Voltar para a lista
+        </button>
+      </div>
+    )
+  }
+
+  // ==========================================
+  // O JSX É QUASE IDÊNTICO AO CriarContrato
+  // Muda apenas o título e o texto do botão salvar
+  // ==========================================
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
-        {/* Header */}
+        {/* Header (Título Atualizado) */}
         <div className="flex items-center gap-4 mb-8">
           <button
             onClick={() => navigate('/contratos')}
@@ -122,8 +165,8 @@ export default function CriarContrato() {
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-white">Novo Contrato</h1>
-            <p className="text-slate-400">Preencha os dados do contrato</p>
+            <h1 className="text-3xl font-bold text-white">Editar Contrato</h1>
+            <p className="text-slate-400">Nº {formData.numero_contrato}</p>
           </div>
         </div>
 
@@ -135,31 +178,18 @@ export default function CriarContrato() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Número do Contrato</label>
-                <input
-                  type="text"
-                  value={formData.numero_contrato}
-                  onChange={(e) => handleChange('numero_contrato', e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                />
+                <input type="text" value={formData.numero_contrato} onChange={(e) => handleChange('numero_contrato', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Tipo de Contrato</label>
-                <select
-                  value={formData.tipo_contrato}
-                  onChange={(e) => handleChange('tipo_contrato', e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                >
+                <select value={formData.tipo_contrato} onChange={(e) => handleChange('tipo_contrato', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
                   <option value="prestacao_servicos">Prestação de Serviços</option>
                   <option value="outro">Outro</option>
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => handleChange('status', e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                >
+                <select value={formData.status} onChange={(e) => handleChange('status', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
                   <option value="rascunho">Rascunho</option>
                   <option value="enviado">Enviado</option>
                   <option value="assinado">Assinado</option>
@@ -196,7 +226,7 @@ export default function CriarContrato() {
             </div>
           </div>
 
-          {/* Dados do Contratado (Pré-preenchido) */}
+          {/* Dados do Contratado */}
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
             <h2 className="text-xl font-bold text-white mb-6">🏢 Dados do Contratado (Sua Empresa)</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -266,24 +296,15 @@ export default function CriarContrato() {
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-white">👥 Testemunhas (Opcional)</h2>
-              <button
-                type="button"
-                onClick={addTestemunha}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition"
-              >
-                <Plus className="w-4 h-4" />
-                Adicionar Testemunha
+              <button type="button" onClick={addTestemunha} className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
+                <Plus className="w-4 h-4" /> Adicionar Testemunha
               </button>
             </div>
             <div className="space-y-4">
               {formData.testemunhas.map((testemunha, index) => (
                 <div key={index} className="bg-slate-900/50 border border-slate-700 rounded-lg p-4 relative">
                   <h3 className="text-md font-semibold text-white mb-4">Testemunha {index + 1}</h3>
-                  <button
-                    type="button"
-                    onClick={() => removeTestemunha(index)}
-                    className="absolute top-4 right-4 p-1 text-red-400 hover:bg-red-900/20 rounded-lg transition"
-                  >
+                  <button type="button" onClick={() => removeTestemunha(index)} className="absolute top-4 right-4 p-1 text-red-400 hover:bg-red-900/20 rounded-lg transition">
                     <Trash2 className="w-5 h-5" />
                   </button>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -296,7 +317,6 @@ export default function CriarContrato() {
                       <input type="text" value={testemunha.cpf} onChange={(e) => handleTestemunhaChange(index, 'cpf', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
                     </div>
                     <div>
-                      {/* ESTA É A LINHA CORRIGIDA */}
                       <label className="block text-sm font-medium text-slate-300 mb-2">Endereço</label>
                       <input type="text" value={testemunha.endereco} onChange={(e) => handleTestemunhaChange(index, 'endereco', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
                     </div>
@@ -306,22 +326,14 @@ export default function CriarContrato() {
             </div>
           </div>
 
-          {/* Botões */}
+          {/* Botões (Texto Atualizado) */}
           <div className="flex justify-end gap-4">
-            <button
-              type="button"
-              onClick={() => navigate('/contratos')}
-              className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition"
-            >
+            <button type="button" onClick={() => navigate('/contratos')} className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition">
               Cancelar
             </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-lg transition disabled:opacity-50"
-            >
+            <button type="submit" disabled={saving} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-lg transition disabled:opacity-50">
               <Save className="w-5 h-5" />
-              {saving ? 'Salvando...' : 'Salvar Contrato'}
+              {saving ? 'Atualizando...' : 'Atualizar Contrato'}
             </button>
           </div>
         </form>
