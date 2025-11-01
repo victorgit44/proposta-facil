@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save, Plus, Trash2, Loader2 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { base44 } from '@/api/supabaseClient'
-import { queryClient } from '@/queryClient'
-import { ContractCard } from '../components/ContractCard'
+import { base44, supabase } from '@/api/supabaseClient' // Importa supabase
+import { queryClient } from '@/queryClient' // Importa queryClient
+
 // Estado inicial do formulário
 const initialState = {
   numero_contrato: `CONT-${Date.now().toString().slice(-6)}`,
@@ -15,19 +15,19 @@ const initialState = {
   contratante_endereco: '',
   contratante_email: '',
   contratante_telefone: '',
-  contratado_nome: '', // Será preenchido pelo hook
-  contratado_cpf_cnpj: '', // Será preenchido pelo hook
-  contratado_endereco: '', // Será preenchido pelo hook
-  contratado_email: '', // Será preenchido pelo hook
-  contratado_telefone: '', // Será preenchido pelo hook
+  contratado_nome: '', 
+  contratado_cpf_cnpj: '', 
+  contratado_endereco: '', 
+  contratado_email: '', 
+  contratado_telefone: '', 
   objeto_contrato: '',
   valor_contrato: 0,
   forma_pagamento: '',
   prazo_vigencia: '',
-  data_inicio: '',
-  data_termino: '',
+  data_inicio: '', // Começa como string vazia
+  data_termino: '', // Começa como string vazia
   clausulas_adicionais: '',
-  testemunhas: [], // Começa vazio
+  testemunhas: [], 
 }
 
 export default function CriarContrato() {
@@ -35,18 +35,18 @@ export default function CriarContrato() {
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState(initialState)
 
-  // Busca os dados da empresa para preencher o "Contratado"
+  // Busca config
   const { data: config, isLoading: isLoadingConfig } = useQuery({
-    queryKey: ['configuracao'],
+    queryKey: ['configuracao'], 
     queryFn: async () => {
       const data = await base44.entities.ConfiguracaoEmpresa.list();
-      return data[0] || {};
+      return data[0] || {}; 
     }
   })
 
-  // Preenche os dados do contratado quando a config carregar
+  // Preenche dados do contratado
   useEffect(() => {
-    if (config) {
+    if (config && !isLoadingConfig) { 
       setFormData(prev => ({
         ...prev,
         contratado_nome: config.nome_empresa || '',
@@ -56,47 +56,62 @@ export default function CriarContrato() {
         contratado_telefone: config.telefone_empresa || '',
       }))
     }
-  }, [config])
+  }, [config, isLoadingConfig])
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  // --- Handlers para Testemunhas ---
+  // Handlers Testemunhas
   const handleTestemunhaChange = (index, field, value) => {
     const newTestemunhas = [...formData.testemunhas]
     newTestemunhas[index][field] = value
     setFormData(prev => ({ ...prev, testemunhas: newTestemunhas }))
   }
-
   const addTestemunha = () => {
     setFormData(prev => ({
       ...prev,
       testemunhas: [...prev.testemunhas, { nome: '', cpf: '', endereco: '' }]
     }))
   }
-
   const removeTestemunha = (index) => {
     const newTestemunhas = formData.testemunhas.filter((_, i) => i !== index)
     setFormData(prev => ({ ...prev, testemunhas: newTestemunhas }))
   }
-  // --- Fim dos Handlers de Testemunhas ---
 
+  // handleSubmit (COM A CORREÇÃO DAS DATAS)
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSaving(true)
 
     try {
-      await base44.entities.Contrato.create({
+      // --- CORREÇÃO: Converter "" para null ---
+      const dataToSave = {
         ...formData,
-        valor_contrato: parseFloat(formData.valor_contrato) || 0
-      })
+        valor_contrato: parseFloat(formData.valor_contrato) || 0,
+        // Se a data for uma string vazia, envia null. Caso contrário, envia o valor.
+        data_inicio: formData.data_inicio || null,
+        data_termino: formData.data_termino || null,
+      };
+      // --- FIM DA CORREÇÃO ---
+
+      await base44.entities.Contrato.create(dataToSave); // Envia os dados corrigidos
       
+      // Chama RPC para incrementar contador
+      const { error: rpcError } = await supabase.rpc('increment_usage', { item_type: 'contrato' });
+      if (rpcError) {
+           console.error('Erro ao incrementar uso do contrato:', rpcError.message);
+           // Não joga erro fatal, mas loga
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['assinatura'] });
       queryClient.invalidateQueries({ queryKey: ['contratos'] })
+      
       alert('Contrato criado com sucesso!')
       navigate('/contratos')
     } catch (error) {
-      alert('Erro ao criar contrato: ' + error.message)
+      console.error("Erro completo ao criar contrato:", error)
+      alert('Erro ao criar contrato: ' + (error.message || error.details || 'Erro desconhecido'))
     } finally {
       setSaving(false)
     }
@@ -110,6 +125,7 @@ export default function CriarContrato() {
     )
   }
 
+  // O JSX (visual) continua o mesmo
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
@@ -133,33 +149,21 @@ export default function CriarContrato() {
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
             <h2 className="text-xl font-bold text-white mb-6">📄 Informações Gerais</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* ... (campos: Numero, Tipo, Status) ... */}
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Número do Contrato</label>
-                <input
-                  type="text"
-                  value={formData.numero_contrato}
-                  onChange={(e) => handleChange('numero_contrato', e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                />
+                <input type="text" value={formData.numero_contrato} onChange={(e) => handleChange('numero_contrato', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Tipo de Contrato</label>
-                <select
-                  value={formData.tipo_contrato}
-                  onChange={(e) => handleChange('tipo_contrato', e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                >
+                <select value={formData.tipo_contrato} onChange={(e) => handleChange('tipo_contrato', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
                   <option value="prestacao_servicos">Prestação de Serviços</option>
                   <option value="outro">Outro</option>
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => handleChange('status', e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                >
+                <select value={formData.status} onChange={(e) => handleChange('status', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
                   <option value="rascunho">Rascunho</option>
                   <option value="enviado">Enviado</option>
                   <option value="assinado">Assinado</option>
@@ -173,6 +177,7 @@ export default function CriarContrato() {
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
             <h2 className="text-xl font-bold text-white mb-6">👤 Dados do Contratante</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* ... (campos: Nome, CPF, Endereço, Email, Telefone) ... */}
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Nome / Razão Social *</label>
                 <input type="text" required value={formData.contratante_nome} onChange={(e) => handleChange('contratante_nome', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" />
@@ -196,10 +201,11 @@ export default function CriarContrato() {
             </div>
           </div>
 
-          {/* Dados do Contratado (Pré-preenchido) */}
+          {/* Dados do Contratado */}
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
             <h2 className="text-xl font-bold text-white mb-6">🏢 Dados do Contratado (Sua Empresa)</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               {/* ... (campos pré-preenchidos) ... */}
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Nome / Razão Social *</label>
                 <input type="text" required value={formData.contratado_nome} onChange={(e) => handleChange('contratado_nome', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" />
@@ -227,6 +233,7 @@ export default function CriarContrato() {
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
             <h2 className="text-xl font-bold text-white mb-6">📜 Objeto e Condições do Contrato</h2>
             <div className="space-y-4">
+              {/* ... (campos: Objeto, Valor, Prazo, Pagamento, Datas, Cláusulas) ... */}
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Objeto do Contrato *</label>
                 <textarea required value={formData.objeto_contrato} onChange={(e) => handleChange('objeto_contrato', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white h-32 focus:outline-none focus:border-blue-500" placeholder="Descreva o objeto do contrato..." />
@@ -264,6 +271,7 @@ export default function CriarContrato() {
 
           {/* Testemunhas (Opcional) */}
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+             {/* ... (JSX das testemunhas) ... */}
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-white">👥 Testemunhas (Opcional)</h2>
               <button
@@ -296,7 +304,6 @@ export default function CriarContrato() {
                       <input type="text" value={testemunha.cpf} onChange={(e) => handleTestemunhaChange(index, 'cpf', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
                     </div>
                     <div>
-                      {/* ESTA É A LINHA CORRIGIDA */}
                       <label className="block text-sm font-medium text-slate-300 mb-2">Endereço</label>
                       <input type="text" value={testemunha.endereco} onChange={(e) => handleTestemunhaChange(index, 'endereco', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
                     </div>

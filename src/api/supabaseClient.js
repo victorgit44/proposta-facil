@@ -70,6 +70,7 @@ const createGenericEntityClient = (tableName) => {
 // --- Client PARA DADOS DO USUÁRIO (COM filtro user_id automático) ---
 const createOwnedEntityClient = (tableName) => {
   return {
+    // A função 'list' original (usada pelo Home, Propostas, etc.)
     list: async (sortBy = '-created_date', limit = 1000) => {
       const userId = await getUserId();
       if (!userId) throw new Error("Usuário não autenticado para listar.");
@@ -79,6 +80,26 @@ const createOwnedEntityClient = (tableName) => {
       if (error) throw error
       return data || []
     },
+
+    // --- 👇 ESTA É A FUNÇÃO QUE FALTAVA (PARA CORRIGIR A TELA PRETA) 👇 ---
+    listForUser: async (userId, sortBy = '-created_date', limit = 1000) => {
+      if (!userId) throw new Error("listForUser: user_id não foi fornecido.");
+      
+      const field = sortBy.startsWith('-') ? sortBy.slice(1) : sortBy;
+      const ascending = !sortBy.startsWith('-');
+      
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('*')
+        .eq('user_id', userId) // Filtra pelo ID fornecido
+        .order(field, { ascending })
+        .limit(limit);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    // --- 👆 FIM DA FUNÇÃO NOVA 👆 ---
+
     filter: async (filters, sortBy = '-created_date', limit = 100) => {
        const userId = await getUserId();
        if (!userId) throw new Error("Usuário não autenticado para filtrar.");
@@ -97,26 +118,25 @@ const createOwnedEntityClient = (tableName) => {
       if (error) throw error
       return data
     },
+    // (create, update, delete continuam aqui...)
     create: async (rawData) => {
        const userId = await getUserId();
        if (!userId) throw new Error("Usuário não autenticado para criar.");
        const dataWithUser = { ...rawData, user_id: userId };
-      // --- Mantendo a MODIFICAÇÃO TEMPORÁRIA (sem .select().single()) ---
+      // Modificação para evitar erro "CTE"
       const { error } = await supabase
         .from(tableName)
         .insert([dataWithUser]);
       if (error) throw error;
       console.log(`CREATE owned (sem select) para ${tableName} bem-sucedido.`);
-      // Retorna os dados enviados + um ID placeholder
       return { ...dataWithUser, id: 'temp-id-após-criar' };
-      // --- FIM DA MODIFICAÇÃO TEMPORÁRIA ---
     },
     update: async (id, rawData) => {
        const userId = await getUserId();
        if (!userId) throw new Error("Usuário não autenticado para atualizar.");
        const dataToUpdate = { ...rawData };
        delete dataToUpdate.user_id;
-       // --- Mantendo a MODIFICAÇÃO TEMPORÁRIA (sem .select().single()) ---
+       // Modificação para evitar erro "CTE"
        const { error } = await supabase
         .from(tableName)
         .update(dataToUpdate)
@@ -124,9 +144,7 @@ const createOwnedEntityClient = (tableName) => {
         .eq('user_id', userId);
        if (error) throw error;
        console.log(`UPDATE owned (sem select) para ${tableName} ID ${id} bem-sucedido.`);
-        // Retorna os dados enviados para atualização
        return { id: id, ...dataToUpdate };
-      // --- FIM DA MODIFICAÇÃO TEMPORÁRIA ---
     },
     delete: async (id) => {
        const userId = await getUserId();
@@ -146,7 +164,7 @@ export const base44 = {
     Proposta: createOwnedEntityClient('propostas'),
     Contrato: createOwnedEntityClient('contratos'),
     ConfiguracaoEmpresa: createOwnedEntityClient('configuracoes_empresa'),
-    Assinatura: createOwnedEntityClient('assinaturas'),
+    Assinatura: createOwnedEntityClient('assinaturas'), // Corrigido para usar o Owned Client
   },
   auth: {
     me: async () => {
@@ -170,12 +188,11 @@ export const base44 = {
       if (error) throw error;
       return user;
     },
-    logout: async () => { // Removido redirectUrl não utilizado
+    logout: async () => {
       const { error } = await supabase.auth.signOut();
       if(error) {
           console.error("Erro no Logout:", error);
       }
-      // Não precisa de reload/redirect aqui, o AuthProvider cuida disso
       return !error;
     },
     isAuthenticated: async () => {
@@ -184,24 +201,14 @@ export const base44 = {
     }
   },
   integrations: {
-    // Exemplo - mantenha as suas implementações reais
      Core: {
        UploadFile: async ({ file }) => {
-         // Esta função não está sendo usada pelo Configuracoes, mas pode ser útil
-         console.warn("base44.integrations.Core.UploadFile não implementado ou diferente do upload direto.");
-         // Exemplo de implementação (precisaria ajustar bucket, nome, RLS/função):
-         // const fileExt = file.name.split('.').pop();
-         // const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-         // const filePath = `generic_uploads/${fileName}`;
-         // const { data, error } = await supabase.storage.from('public').upload(filePath, file); // Exemplo bucket 'public'
-         // if (error) throw error;
-         // const { data: { publicUrl } } = supabase.storage.from('public').getPublicUrl(filePath);
-         // return { file_url: publicUrl };
+         console.warn("base44.integrations.Core.UploadFile não implementado.");
          return { file_url: 'nao-implementado' };
        },
        InvokeLLM: async ({ prompt }) => {
          console.log('LLM Prompt (base44):', prompt);
-         return { response: 'Resposta simulada da IA (base44). Integre com OpenAI/Webhook para respostas reais.' };
+         return { response: 'Resposta simulada da IA (base44).' };
        }
      }
   },

@@ -1,124 +1,170 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User } from 'lucide-react'
+import { Link } from 'react-router-dom';
+import { Send, Bot, User, Loader2, AlertCircle } from 'lucide-react' // Importe Loader2 e AlertCircle
+import { useQuery } from '@tanstack/react-query'; // Importe useQuery
+import { base44, supabase } from '@/api/supabaseClient'; // Importe supabase (para o RPC)
+import { queryClient } from '@/queryClient'; // Importe queryClient
+import { useAuth } from '../context/AuthContext'; // Importe useAuth
+import { PLAN_LIMITS } from '@/config'; // Importe PLAN_LIMITS
 
 // Mensagem inicial da IA
-const initialMessage = {
-  id: Date.now(),
-  type: 'ia', // 'ia' ou 'user'
-  text: 'Olá! 👋 Como posso te ajudar hoje com suas propostas ou contratos?'
+const initialMessage = { 
+  id: Date.now(), 
+  type: 'ia', 
+  text: 'Olá! 👋 Como posso te ajudar hoje com suas propostas ou contratos?' 
 }
 
-// Função para formatar o histórico para o formato que o AI Agent provavelmente espera
-// (Ajuste 'ia' -> 'assistant' se necessário pelo seu modelo/nó n8n)
-const formatHistoryForAI = (messages) => {
-  return messages.map(msg => ({
-    role: msg.type === 'ia' ? 'assistant' : 'user',
-    content: msg.text
-  }));
-}
+// Definição do plano padrão/fallback
+const defaultSubscription = {
+  plano: 'Gratuito',
+  mensagens_ia_mes: 0,
+};
+const defaultLimits = PLAN_LIMITS['Gratuito'];
+
 
 export default function ChatIA() {
+  // --- 1. PEGAR O USUÁRIO DO CONTEXTO ---
+  const { user } = useAuth(); // 'loading' do auth já foi tratado pelo AuthProvider
+
   const [messages, setMessages] = useState([initialMessage])
   const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const messagesEndRef = useRef(null)
+  const [isLoadingResponse, setIsLoadingResponse] = useState(false) // Renomeado para clareza
+  const messagesEndRef = useRef(null) 
 
+  // --- 2. BUSCAR ASSINATURA (habilitado PÓS login) ---
+  const {
+    data: assinaturaData,
+    isLoading: loadingAssinatura,
+    error: errorAssinatura,
+  } = useQuery({
+    queryKey: ['assinatura'],
+    queryFn: async () => {
+      const data = await base44.entities.Assinatura.list(); 
+      return data[0] || defaultSubscription;
+    },
+    enabled: !!user, // Só busca se o usuário estiver logado
+  });
+  const assinatura = assinaturaData || defaultSubscription;
+  
+  // Combina estados de loading
+  const isLoading = loadingAssinatura; // O loading principal é o da assinatura
+  const error = errorAssinatura;
+
+  // --- 3. VERIFIQUE O LIMITE ---
+  const limits = PLAN_LIMITS[assinatura.plano] || defaultLimits;
+  const isLimitReached = (assinatura.mensagens_ia_mes ?? 0) >= (limits.ia ?? 0);
+
+  // Scroll
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
-
   useEffect(() => {
     scrollToBottom()
   }, [messages])
 
+  // Função de enviar mensagem
   const handleSendMessage = async () => {
+    // Verifica limite
+    if (isLimitReached) {
+        setMessages(prev => [...prev, {
+            id: Date.now() + 1,
+            type: 'ia',
+            text: `Desculpe, você atingiu seu limite de ${limits.ia} mensagens de IA para este mês. Para continuar, por favor, considere fazer um upgrade do seu plano.`
+        }]);
+        setInput('');
+        return;
+    }
+
     const userMessageText = input.trim();
-    if (!userMessageText || isLoading) return;
+    if (!userMessageText || isLoadingResponse) return; // Usa isLoadingResponse
 
-    // Cria a nova mensagem do usuário
     const newUserMessage = { id: Date.now(), type: 'user', text: userMessageText };
-    
-    // Atualiza o estado das mensagens VISÍVEIS no chat
     const updatedMessages = [...messages, newUserMessage];
+
     setMessages(updatedMessages);
-    setInput('')
-    setIsLoading(true)
+    setInput('');
+    setIsLoadingResponse(true); // Ativa o loading da *resposta*
 
-    // --- CHAMADA AO WEBHOOK COM HISTÓRICO ---
     try {
-      const webhookUrl = 'https://vm-n8n.xyrugy.easypanel.host/webhook/03a174c4-2ad0-426a-8c98-22685b7e85d1';
+      // --- INCREMENTA O USO (RPC) ---
+      const { error: rpcError } = await supabase.rpc('increment_usage', { item_type: 'ia' });
+      if (rpcError) {
+          console.error('Erro ao incrementar uso da IA:', rpcError);
+          throw new Error(`Falha ao registrar uso da IA: ${rpcError.message}`);
+      }
+      // Invalida o cache para atualizar a contagem na UI (no AuthContext)
+      queryClient.invalidateQueries({ queryKey: ['assinatura'] });
+      // --- FIM DO INCREMENTO ---
 
-      // Formata o histórico ANTES da última mensagem do usuário para enviar ao n8n
-      // (O modelo da IA geralmente funciona melhor recebendo a última mensagem separadamente)
-      // Ou envie updatedMessages completo se seu nó n8n preferir
-      const historyForAI = formatHistoryForAI(messages); // Histórico *antes* da mensagem atual
-
-      console.log("Enviando para n8n:", JSON.stringify({ message: userMessageText, history: historyForAI }, null, 2));
-
+      // Prepara dados para o webhook
+      const webhookUrl = 'https://vm-n8n.xyrugy.easypanel.host/webhook-test/03a174c4-2ad0-426a-8c98-22685b7e85d1';
+      const historyForAI = formatHistoryForAI(updatedMessages); // Envia histórico atualizado
 
       const response = await fetch(webhookUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // Envia a última mensagem E o histórico anterior
-        body: JSON.stringify({ 
-            message: userMessageText, // Última mensagem do usuário
-            history: historyForAI      // Array de mensagens anteriores
-        }), 
+        headers: { 'Content-Type': 'application/json', },
+        body: JSON.stringify({ message: userMessageText, history: historyForAI }), 
       });
 
       if (!response.ok) {
-        const errorBody = await response.text();
-        console.error("Webhook error response body:", errorBody);
         throw new Error(`Erro do webhook: ${response.status} ${response.statusText}`);
       }
 
-      let data;
-      try {
-        data = await response.json();
-      } catch (jsonError) {
-          console.error("Erro ao fazer parse do JSON da resposta:", jsonError);
-          const rawResponse = await response.text();
-          console.error("Resposta bruta do webhook:", rawResponse);
-          throw new Error("O webhook não retornou um JSON válido.");
-      }
-
-      console.log('Resposta completa do n8n:', JSON.stringify(data, null, 2));
-
-      // Prioriza 'output', depois outros campos comuns
+      const data = await response.json(); // Adicionado try/catch em volta
       const aiReply = data.output || data.reply || data.message || data.text || "Webhook respondeu, mas o campo esperado não foi encontrado.";
 
       if (!aiReply || typeof aiReply !== 'string' || aiReply.trim() === '') {
-         console.warn("Resposta do webhook recebida, mas campo esperado está vazio ou inválido:", data);
          throw new Error("Webhook respondeu sem um texto válido no campo esperado.");
       }
 
-      // Adiciona a resposta da IA ao chat
       setMessages(prev => [...prev, { id: Date.now() + 1, type: 'ia', text: aiReply.trim() }])
 
     } catch (error) {
       console.error("Erro ao chamar ou processar o webhook:", error);
-      // Adiciona mensagem de erro no estado VISÍVEL
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         type: 'ia',
         text: `Desculpe, ocorreu um erro: ${error.message}`
       }])
     } finally {
-      setIsLoading(false);
+      setIsLoadingResponse(false); // Desativa o loading da *resposta*
     }
-    // --- FIM DA CHAMADA AO WEBHOOK ---
+  }
+
+  // Função auxiliar de formatação
+  const formatHistoryForAI = (msgs) => {
+    return msgs.map(msg => ({
+      role: msg.type === 'ia' ? 'assistant' : 'user',
+      content: msg.text
+    }));
   }
 
   const handleKeyPress = (event) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
+    if (event.key === 'Enter' && !event.shiftKey) { 
+      event.preventDefault(); 
       handleSendMessage();
     }
   }
 
-  // O JSX (parte visual) continua o mesmo...
+  // Renderiza Loading/Error
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-[calc(100vh-theme(space.16))]">
+        <Loader2 size={48} className="text-pink-500 animate-spin" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col justify-center items-center h-[calc(100vh-theme(space.16))] text-red-400 p-4 text-center">
+        <AlertCircle size={48} className="mb-4" />
+        <p>Erro ao carregar dados do Chat: {error.message}</p>
+      </div>
+    )
+  }
+
+
   return (
     <div className="flex flex-col h-[calc(100vh-theme(space.16))]">
       {/* Cabeçalho */}
@@ -132,6 +178,7 @@ export default function ChatIA() {
       {/* Área das Mensagens */}
       <div className="flex-1 overflow-y-auto p-6 bg-slate-900">
         <div className="max-w-4xl mx-auto space-y-4">
+          {/* Map de mensagens */}
           {messages.map(msg => (
             <div key={msg.id} className={`flex items-start gap-3 ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.type === 'ia' && (
@@ -153,7 +200,8 @@ export default function ChatIA() {
               )}
             </div>
           ))}
-          {isLoading && (
+          {/* Indicador "pensando" */}
+          {isLoadingResponse && ( // Usa o loading da *resposta*
              <div className="flex items-start gap-3 justify-start">
                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-pink-600 flex items-center justify-center">
                   <Bot size={18} className="text-white" />
@@ -173,20 +221,28 @@ export default function ChatIA() {
 
       {/* Área de Input */}
       <div className="bg-slate-800/50 border-t border-slate-700 p-4 sticky bottom-0">
+        {/* Aviso de Limite */}
+        {isLimitReached && (
+            <div className="max-w-4xl mx-auto mb-3 p-3 bg-yellow-900/30 border border-yellow-500/50 text-yellow-300 rounded-lg text-xs text-center">
+                Você atingiu o limite de {limits.ia} mensagens do seu plano.
+                <Link to="/planos" className="font-bold underline hover:text-yellow-200 ml-1">Faça um upgrade</Link>.
+            </div>
+        )}
         <div className="max-w-4xl mx-auto flex items-center gap-3">
           <textarea
             rows={1}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Digite sua mensagem..."
-            disabled={isLoading}
-            className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-pink-500 resize-none max-h-32 overflow-y-auto disabled:opacity-50"
+            placeholder={isLimitReached ? "Limite de mensagens atingido" : "Digite sua mensagem..."}
+            // Desabilita se limite atingido OU se espera resposta OU se auth/assinatura ainda carrega
+            disabled={isLoadingResponse || isLimitReached || isLoading} 
+            className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-pink-500 resize-none max-h-32 overflow-y-auto disabled:opacity-50 disabled:cursor-not-allowed"
             style={{scrollbarWidth: 'thin'}}
           />
           <button
             onClick={handleSendMessage}
-            disabled={!input.trim() || isLoading}
+            disabled={!input.trim() || isLoadingResponse || isLimitReached || isLoading}
             className="bg-gradient-to-r from-pink-600 to-pink-700 text-white p-3 rounded-lg font-semibold hover:from-pink-700 hover:to-pink-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send size={20} />

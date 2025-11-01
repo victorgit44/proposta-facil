@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
-import { supabase } from '@/api/supabaseClient'; // Importe o cliente Supabase
+// --- 1. Importar base44 e supabase ---
+import { supabase, base44 } from '@/api/supabaseClient'; 
 
-// Ícones (LogoIcon, GoogleIcon - Opcional para cadastro)
 const LogoIcon = () => (
   <svg className="w-8 h-8 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M12 18.5l-2-1m2 1l2-1m-2 1V16M6 7l2 1m-2-1l2-1m-2 1V10M4 14l2-1m-2 1l2 1m-2-1V11.5" />
@@ -14,17 +14,16 @@ export default function SignupPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState(''); // Campo extra
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState(''); // Mensagem de sucesso
+  const [successMessage, setSuccessMessage] = useState('');
 
-  // --- Função de Cadastro com Email/Senha ---
+  // --- 2. 'handleSignUp' ATUALIZADO ---
   const handleSignUp = async (e) => {
     e.preventDefault();
     
-    // Validação extra: Senhas coincidem?
     if (password !== confirmPassword) {
       setError('As senhas não coincidem.');
       return;
@@ -35,33 +34,59 @@ export default function SignupPage() {
     setSuccessMessage('');
     
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      // --- ETAPA 1: Criar o usuário ---
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: email,
         password: password,
-        // options: {
-        //   data: { // Opcional: Adicionar dados extras ao usuário no cadastro
-        //     full_name: 'Nome Padrão', 
-        //   }
-        // }
       });
 
       if (signUpError) {
-        throw signUpError;
+        throw signUpError; // Joga o erro de cadastro (ex: usuário já existe)
       }
 
-      console.log('Cadastro bem-sucedido:', data);
-      
-      // Mensagem de sucesso (considerando se a confirmação de email está ATIVA ou NÃO)
-      if (data.user?.identities?.length === 0) {
-           // Provavelmente a confirmação de email está ATIVA no Supabase
-           setSuccessMessage('Cadastro realizado! Verifique seu email para confirmar a conta.');
-           // Não redireciona, espera a confirmação
-      } else {
-           // Provavelmente a confirmação de email está DESATIVADA
-           setSuccessMessage('Cadastro realizado com sucesso! Redirecionando para login...');
-           setTimeout(() => navigate('/login'), 2000); // Redireciona para login após 2s
-      }
+      // Se o usuário foi criado E a sessão foi iniciada (confirmação de email DESATIVADA)
+      if (signUpData.user && signUpData.session) {
+        console.log('Usuário criado:', signUpData.user.id);
 
+        // --- ETAPA 2: Criar a assinatura padrão para o novo usuário ---
+        try {
+          await base44.entities.Assinatura.create({
+            user_id: signUpData.user.id, // ID do novo usuário
+            plano: 'Gratuito',
+            status: 'active',
+            propostas_criadas_mes: 0,
+            contratos_criados_mes: 0,
+            mensagens_ia_mes: 0,
+            ultimo_reset: new Date().toISOString(), // Data de hoje
+          });
+          console.log('Assinatura "Gratuito" criada para o usuário.');
+
+        } catch (subError) {
+          // O usuário foi criado, mas a assinatura falhou.
+          console.error("Erro ao criar assinatura:", subError);
+          // Informa o usuário, mas o cadastro ainda foi "parcialmente" bem-sucedido
+          setError('Usuário criado, mas falha ao configurar a assinatura. Contate o suporte.');
+          setLoading(false);
+          return; // Para a execução
+        }
+        
+        // --- SUCESSO COMPLETO ---
+        setSuccessMessage('Conta criada com sucesso! Redirecionando...');
+        // O AuthProvider vai detectar o 'SIGNED_IN' e redirecionar
+        // Mas podemos forçar um redirecionamento para o login (ou direto para o app)
+        setTimeout(() => navigate('/'), 2000); // Redireciona para o Dashboard
+
+      } else if (signUpData.user && !signUpData.session) {
+        // --- SUCESSO (Confirmação de Email ATIVA) ---
+        console.log('Cadastro realizado. Aguardando confirmação de email.');
+        // O gatilho SQL cuidará da criação da assinatura QUANDO o usuário confirmar
+        // (Assumindo que o gatilho está em auth.users)
+        // **ATUALIZAÇÃO:** Como o gatilho não funciona, precisamos da Edge Function ou criar aqui.
+        // Vamos assumir por enquanto que a confirmação está DESATIVADA, como no fluxo acima.
+        // Se a confirmação estiver ATIVA, o fluxo acima (Etapa 2) não rodará 
+        // porque a 'session' não é criada.
+        setSuccessMessage('Cadastro realizado! Verifique seu email para confirmar a conta.');
+      }
 
     } catch (err) {
       console.error('Erro no cadastro:', err);
@@ -70,6 +95,7 @@ export default function SignupPage() {
       setLoading(false);
     }
   };
+  // --- FIM DA ATUALIZAÇÃO ---
 
   return (
     <div className="flex min-h-screen bg-slate-900">
@@ -158,7 +184,6 @@ export default function SignupPage() {
                     disabled={loading || !!successMessage}
                     className="block w-full appearance-none rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-white placeholder-slate-500 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm disabled:opacity-50"
                   />
-                   {/* O botão de mostrar/esconder afeta ambos os campos */}
                 </div>
               </div>
 
@@ -179,9 +204,6 @@ export default function SignupPage() {
                 </button>
               </div>
             </form>
-
-            {/* Opcional: Adicionar "OR sign up with Google" aqui se desejar */}
-            
           </div>
         </div>
       </div>
