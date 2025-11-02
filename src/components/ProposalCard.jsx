@@ -1,89 +1,79 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { Eye, Edit2, Trash2 } from 'lucide-react'
+import { formatCurrency, formatDate } from '../utils/formatters' // Importe formatters
 
-// Helper para formatar moeda
-const formatCurrency = (value) => {
-  if (typeof value !== 'number') {
-    value = parseFloat(value) || 0;
-  }
-  return value.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  });
-}
-
-// Helper para o "chip" de status
+// --- HELPER DE STATUS ADICIONADO ---
 const getStatusChip = (status) => {
-  switch (status) {
-    case 'Aprovada':
+  switch (status?.toLowerCase()) { // Usa lowerCase para segurança
+    case 'aprovada':
       return 'bg-green-500/20 text-green-400 border border-green-500/30'
-    case 'Enviada':
+    case 'enviada':
       return 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-    case 'Rascunho':
+    case 'rascunho':
       return 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
-    case 'Rejeitada':
+    case 'recusada': // Adicionado 'recusada'
       return 'bg-red-500/20 text-red-400 border border-red-500/30'
     default:
       return 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
   }
 }
+// --- FIM DO HELPER ---
 
 export function ProposalCard({ proposta, onExcluir }) {
-  // Ajuste os nomes dos campos se forem diferentes no seu banco
   const {
     id,
     nome_cliente,
-    descricao,
+    servico_prestado, // Usa 'servico_prestado' do seu schema
     numero_proposta,
     status,
     valor_total,
     prazo_entrega,
     updated_at,
+    created_date, // Adicionado
   } = proposta
 
-  const dataFormatada = new Date(updated_at).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  })
+  // Usa 'updated_at' se existir, senão 'created_date'
+  const dataFormatada = formatDate(updated_at || created_date); 
 
   return (
-    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 shadow-lg relative overflow-hidden">
+    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 shadow-lg relative overflow-hidden transition-all hover:border-slate-600">
       <div className="flex flex-col md:flex-row md:items-start md:justify-between">
         {/* Lado Esquerdo: Infos */}
         <div className="flex-1 mb-4 md:mb-0">
           <div className="flex items-center gap-4 mb-3">
-             {/* Usei a primeira letra do cliente para o ícone */}
-            <div className="bg-blue-600 w-12 h-12 p-3 rounded-lg flex-shrink-0 flex items-center justify-center">
+             <div className="bg-blue-600 w-12 h-12 p-3 rounded-lg flex-shrink-0 flex items-center justify-center">
               <span className="text-white text-2xl font-bold">
+                {/* Usa a primeira letra do nome do cliente */}
                 {nome_cliente?.charAt(0).toUpperCase() || 'P'}
               </span>
             </div>
             <div>
               <h3 className="text-xl font-bold text-white">{nome_cliente || 'Nome do Cliente'}</h3>
-              <p className="text-sm text-slate-400 line-clamp-1">{descricao || 'Descrição do serviço'}</p>
+              <p className="text-sm text-slate-400 line-clamp-1">{servico_prestado || 'Descrição do serviço'}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-sm text-slate-400 mt-4">
+          <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-sm text-slate-400 mt-4">
             <span>Nº {numero_proposta || 'PROP-001'}</span>
-            <span>•</span>
+            <span className="hidden md:inline">•</span>
             <span>{dataFormatada}</span>
-            <span>•</span>
-            <span>Prazo: {prazo_entrega || 'N/D'} dias</span>
+            <span className="hidden md:inline">•</span>
+            <span>Prazo: {prazo_entrega || 'N/D'}</span>
           </div>
         </div>
 
         {/* Lado Direito: Valor e Botões */}
         <div className="flex flex-col items-start md:items-end w-full md:w-auto">
-          <div className="absolute top-4 right-4">
+          {/* --- CHIP DE STATUS ADICIONADO --- */}
+          <div className="absolute top-4 right-4 md:relative md:top-0 md:right-0 md:mb-4">
             <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusChip(status)}`}>
               {status || 'Status'}
             </span>
           </div>
+          {/* --- FIM DO CHIP --- */}
 
-          <div className="text-3xl font-bold text-white mt-8 md:mt-12 mb-4">
+          <div className="text-3xl font-bold text-white mt-8 md:mt-0 mb-4">
             {formatCurrency(valor_total)}
           </div>
 

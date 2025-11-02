@@ -5,17 +5,21 @@ import { base44 } from '../api/supabaseClient' // Ajuste o caminho se necessári
 import { formatCurrency, formatDate } from '../utils/formatters' // Ajuste o caminho se necessário
 import { Loader2, AlertCircle, Printer, Download, ArrowLeft } from 'lucide-react'
 
-// (O componente ParteInfo continua o mesmo)
-function ParteInfo({ titulo, dados }) {
+// Componente helper para formatar os parágrafos "CONTRATANTE" e "CONTRATADO"
+//
+function ParteInfoParagraph({ titulo, dados }) {
   return (
     <div className="mb-4">
-      <h3 className="text-md font-bold text-slate-900">{titulo}:</h3>
+      <h3 className="text-lg font-bold text-slate-900 uppercase mb-2">{titulo}:</h3>
+      {/* Renderiza como um parágrafo único, adicionando vírgulas e texto
+        exatamente como no design de referência.
+      */}
       <p className="text-sm text-slate-700 leading-relaxed">
         <strong>{dados.nome || 'Nome não informado'}</strong>
-        {dados.cpf_cnpj && `, inscrito(a) no CPF/CNPJ sob nº ${dados.cpf_cnpj}`}
-        {dados.endereco && `, com endereço à ${dados.endereco}`}
-        {dados.email && `, e-mail ${dados.email}`}
-        {dados.telefone && `, telefone ${dados.telefone}`};
+        {dados.cpf_cnpj && `, inscrito(a) no CPF/CNPJ sob nº ${dados.cpf_cnpj},`}
+        {dados.endereco && ` com endereço à ${dados.endereco},`}
+        {dados.email && ` e-mail ${dados.email},`}
+        {dados.telefone && ` telefone ${dados.telefone}.`}
       </p>
     </div>
   )
@@ -25,7 +29,7 @@ function ParteInfo({ titulo, dados }) {
 function VisualizarContrato() {
   const { id } = useParams()
 
-  // Busca Contrato
+  // 1. Busca os dados do CONTRATO
   const {
     data: contrato,
     isLoading: isLoadingContrato,
@@ -36,9 +40,9 @@ function VisualizarContrato() {
     enabled: !!id,
   })
 
-  // Busca Configuração
+  // 2. Busca os dados de CONFIGURAÇÃO da empresa
   const {
-    data: config,
+    data: configData,
     isLoading: isLoadingConfig,
     error: errorConfig,
   } = useQuery({
@@ -48,39 +52,58 @@ function VisualizarContrato() {
       return data[0] || {};
     }
   })
+  const config = configData || {}; // Garante que 'config' seja um objeto
 
-  // --- 1. ATUALIZAR FUNÇÕES DE IMPRESSÃO ---
+  // 3. Funções de Impressão
   const handlePrint = () => {
     window.print();
   }
-  const handleDownload = () => {
-    window.print();
-  }
-  // --- FIM DA ATUALIZAÇÃO ---
 
-
+  // 4. Estados de Loading e Erro
   if (isLoadingContrato || isLoadingConfig) {
-    // ... (código de loading) ...
     return <div className="flex justify-center items-center h-screen"><Loader2 size={48} className="text-purple-500 animate-spin" /></div>
   }
-
   if (errorContrato || errorConfig || !contrato) {
-    // ... (código de erro) ...
     const message = errorContrato?.message || errorConfig?.message || 'Contrato não encontrado.'
-    return <div className="flex flex-col justify-center items-center h-screen text-red-400"><AlertCircle size={48} className="mb-4" /><p>{message}</p></div>
+    return (
+      <div className="flex flex-col justify-center items-center h-screen text-red-400 p-4 text-center">
+        <AlertCircle size={48} className="mb-4" />
+        <p className="text-xl mb-4">Erro ao carregar contrato: {message}</p>
+        <Link to="/contratos" className="text-blue-400 hover:text-blue-300">
+          Voltar para a lista
+        </Link>
+      </div>
+    )
   }
   
-  // Mapeamento dos dados (igual)
-  const contratante = { /* ... */ };
-  const contratado = { /* ... */ };
+  // 5. Mapeia os dados para os helpers
+  const contratante = {
+    nome: contrato.contratante_nome,
+    cpf_cnpj: contrato.contratante_cpf_cnpj,
+    endereco: contrato.contratante_endereco,
+    email: contrato.contratante_email,
+    telefone: contrato.contratante_telefone,
+  }
+  
+  const contratado = {
+    nome: contrato.contratado_nome || config.nome_empresa,
+    cpf_cnpj: contrato.contratado_cpf_cnpj || config.cnpj,
+    endereco: contrato.contratado_endereco || config.endereco,
+    email: contrato.contratado_email || config.email_empresa,
+    telefone: contrato.contratado_telefone || config.telefone_empresa,
+  }
+  
   const testemunhas = Array.isArray(contrato.testemunhas) ? contrato.testemunhas : [];
-  const cidadeForo = contratado.endereco?.split(',').pop()?.trim() || 'Sua Cidade/UF';
+  // Tenta extrair a cidade do endereço do contratado para o local de assinatura
+  const localAssinatura = contratado.endereco?.split(' - ')[1]?.split('/')[0] || 'Sua Cidade';
 
+  // 6. Renderização do Componente
   return (
-    <div className="p-4 md:p-8 bg-slate-900 min-h-screen">
-      {/* --- 2. ADICIONAR CLASSE 'no-print' --- */}
+    // Fundo escuro
+    <div className="p-4 md:p-8 bg-slate-900 min-h-screen text-slate-900">
+      
       {/* Cabeçalho da Ação (NÃO SERÁ IMPRESSO) */}
-      <div className="max-w-5xl mx-auto mb-6 no-print">
+      <div className="max-w-5xl mx-auto mb-6 no-print"> 
         <div className="flex justify-between items-center">
           <Link
             to="/contratos"
@@ -97,7 +120,7 @@ function VisualizarContrato() {
               <Printer size={16} /> Imprimir PDF
             </button>
             <button
-              onClick={handleDownload}
+              onClick={handlePrint} 
               className="flex items-center gap-2 text-sm text-white bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition"
             >
               <Download size={16} /> Baixar PDF
@@ -106,26 +129,27 @@ function VisualizarContrato() {
         </div>
       </div>
 
-      {/* --- 3. ADICIONAR ID 'printable-area' --- */}
       {/* Container do Contrato (SERÁ IMPRESSO) */}
-      <div id="printable-area" className="max-w-5xl mx-auto bg-white p-12 md:p-16 rounded-lg shadow-2xl text-slate-900">
+      <div id="printable-area" className="max-w-5xl mx-auto bg-white p-12 md:p-16 rounded-lg shadow-2xl">
         
+        {/* Cabeçalho do Documento */}
         <header className="text-center mb-10">
-          <h1 className="text-2xl font-bold uppercase mb-2">Contrato de Prestação de Serviços</h1>
+          <h1 className="text-3xl font-bold uppercase mb-2">Contrato de Prestação de Serviços</h1>
           <p className="text-lg font-semibold text-slate-700">Nº {contrato.numero_contrato}</p>
         </header>
 
+        {/* Introdução e Partes */}
         <p className="text-sm text-slate-700 leading-relaxed mb-6">
           Por este instrumento particular de contrato de prestação de serviços, de um lado:
         </p>
 
-        <ParteInfo titulo="CONTRATANTE" dados={contratante} />
+        <ParteInfoParagraph titulo="CONTRATANTE" dados={contratante} />
         
         <p className="text-sm text-slate-700 leading-relaxed my-6">
           E de outro lado:
         </p>
 
-        <ParteInfo titulo="CONTRATADO" dados={contratado} />
+        <ParteInfoParagraph titulo="CONTRATADO" dados={contratado} />
 
         <p className="text-sm text-slate-700 leading-relaxed my-6">
           Têm entre si justo e contratado o seguinte:
@@ -133,41 +157,46 @@ function VisualizarContrato() {
 
         {/* Cláusulas */}
         <section className="space-y-6">
+          {/* Objeto */}
           <div>
-            <h2 className="text-md font-bold uppercase mb-2">Cláusula Primeira - Do Objeto</h2>
-            <p className="text-sm text-slate-700 leading-relaxed">{contrato.objeto_contrato}</p>
+            <h2 className="text-lg font-bold uppercase mb-2">Cláusula Primeira - Do Objeto</h2>
+            <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{contrato.objeto_contrato}</p>
           </div>
           
+          {/* Valor e Pagamento */}
           <div>
-            <h2 className="text-md font-bold uppercase mb-2">Cláusula Segunda - Do Valor e Forma de Pagamento</h2>
+            <h2 className="text-lg font-bold uppercase mb-2">Cláusula Segunda - Do Valor e Forma de Pagamento</h2>
             <p className="text-sm text-slate-700 leading-relaxed">
               O valor total do presente contrato é de <strong>{formatCurrency(contrato.valor_contrato)}</strong>.
             </p>
-            <p className="text-sm text-slate-700 leading-relaxed mt-2">
+            <p className="text-sm text-slate-700 leading-relaxed mt-2 whitespace-pre-wrap">
               {contrato.forma_pagamento}
             </p>
           </div>
           
+          {/* Prazo */}
           <div>
-            <h2 className="text-md font-bold uppercase mb-2">Cláusula Terceira - Do Prazo</h2>
-            <p className="text-sm text-slate-700 leading-relaxed">
+            <h2 className="text-lg font-bold uppercase mb-2">Cláusula Terceira - Do Prazo</h2>
+            <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
               O presente contrato terá vigência de {contrato.prazo_vigencia || 'prazo não definido'}
               {contrato.data_inicio && `, iniciando em ${formatDate(contrato.data_inicio)}`}
               {contrato.data_termino && ` e encerrando em ${formatDate(contrato.data_termino)}`}.
             </p>
           </div>
           
+          {/* Cláusulas Adicionais */}
           {contrato.clausulas_adicionais && (
             <div>
-              <h2 className="text-md font-bold uppercase mb-2">Cláusulas Adicionais</h2>
-              <p className="text-sm text-slate-700 leading-relaxed">{contrato.clausulas_adicionais}</p>
+              <h2 className="text-lg font-bold uppercase mb-2">Cláusulas Adicionais</h2>
+              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{contrato.clausulas_adicionais}</p>
             </div>
           )}
 
+          {/* Foro */}
           <div>
-            <h2 className="text-md font-bold uppercase mb-2">Cláusula Final - Do Foro</h2>
+            <h2 className="text-lg font-bold uppercase mb-2">Cláusula Final - Do Foro</h2>
             <p className="text-sm text-slate-700 leading-relaxed">
-              As partes elegem o foro da comarca de {cidadeForo} para dirimir quaisquer dúvidas ou controvérsias oriundas deste contrato, renunciando a qualquer outro, por mais privilegiado que seja.
+              As partes elegem o foro da comarca de {localAssinatura || 'Sua Cidade'} para dirimir quaisquer dúvidas ou controvérsias oriundas deste contrato, renunciando a qualquer outro, por mais privilegiado que seja.
             </p>
           </div>
         </section>
@@ -178,31 +207,32 @@ function VisualizarContrato() {
             E, por estarem assim justos e contratados, firmam o presente instrumento em duas vias de igual teor e forma, na presença das testemunhas abaixo.
           </p>
           
-          <p className="text-sm text-slate-700 leading-relaxed text-center mt-6">
-            {cidadeForo}, {formatDate(contrato.created_date || new Date())}.
+          <p className="text-center mt-8">
+            {localAssinatura}, {formatDate(contrato.created_date || new Date())}.
           </p>
 
-          <div className="grid grid-cols-2 gap-16 mt-16">
+          <div className="grid grid-cols-2 gap-16 mt-20">
             <div className="text-center">
-              <div className="border-b border-slate-900 w-full mb-2"></div>
-              <p className="text-sm font-semibold">{contratante.nome}</p>
-              <p className="text-xs uppercase text-slate-600">Contratante</p>
+              <div className="border-b-2 border-slate-900 w-full mb-2"></div>
+              <p className="text-sm font-bold">{contratante.nome}</p>
+              <p className="text-xs uppercase text-slate-600 tracking-wider">CONTRATANTE</p>
             </div>
             <div className="text-center">
-              <div className="border-b border-slate-900 w-full mb-2"></div>
-              <p className="text-sm font-semibold">{contratado.nome}</p>
-              <p className="text-xs uppercase text-slate-600">Contratado</p>
+              <div className="border-b-2 border-slate-900 w-full mb-2"></div>
+              <p className="text-sm font-bold">{contratado.nome}</p>
+              <p className="text-xs uppercase text-slate-600 tracking-wider">CONTRATADO</p>
             </div>
           </div>
           
+          {/* Testemunhas */}
           {testemunhas.length > 0 && (
             <div className="mt-16">
               <h3 className="text-md font-bold uppercase text-center mb-8">Testemunhas:</h3>
               <div className="grid grid-cols-2 gap-16">
                 {testemunhas.map((t, index) => (
                   <div key={index} className="text-center">
-                    <div className="border-b border-slate-900 w-full mb-2"></div>
-                    <p className="text-sm font-semibold">{t.nome}</p>
+                    <div className="border-b-2 border-slate-900 w-full mb-2"></div>
+                    <p className="text-sm font-bold">{t.nome}</p>
                     <p className="text-xs text-slate-600">CPF: {t.cpf}</p>
                   </div>
                 ))}

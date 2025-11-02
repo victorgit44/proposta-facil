@@ -4,20 +4,21 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { base44 } from '../api/supabaseClient'
 import { queryClient } from '../queryClient'
 import { formatCurrency } from '../utils/formatters'
-import { Loader2, AlertCircle, TrendingUp, FileText, CheckSquare, Target, MessageSquare, Briefcase, Crown, ShoppingCart, Wallet } from 'lucide-react'
+import { 
+  Loader2, AlertCircle, TrendingUp, FileText, 
+  Target, MessageSquare, Briefcase, Crown, Wallet, CheckSquare 
+} from 'lucide-react' 
 import { StatCard } from '../components/StatCard'
 import { UsageCard } from '../components/UsageCard'
 import { ProposalCard } from '../components/ProposalCard'
-import { useAuth } from '../context/AuthContext' // Importa o hook de auth simplificado
-import { PLAN_LIMITS } from '@/config' // Importa os limites do config
-
-// (Removemos o hook useDashboardData, vamos buscar tudo aqui)
+import { useAuth } from '../context/AuthContext' 
+import { PLAN_LIMITS } from '@/config' 
 
 // Definição do plano padrão/fallback
 const defaultSubscription = {
   plano: 'Gratuito',
   propostas_criadas_mes: 0,
-  contratos_criados_mes: 0,
+  contratos_criadas_mes: 0,
   mensagens_ia_mes: 0,
 };
 const defaultLimits = PLAN_LIMITS['Gratuito'];
@@ -25,10 +26,9 @@ const defaultLimits = PLAN_LIMITS['Gratuito'];
 
 // Componente principal do Dashboard
 function Home() {
-  // 1. Pega o usuário do AuthContext
-  const { user } = useAuth(); // 'loading' do auth já foi tratado pelo provider
+  const { user } = useAuth(); 
 
-  // 2. Busca Propostas (só roda se 'user' existir, habilitado por padrão)
+  // Busca Propostas (habilitado por 'user')
   const {
     data: propostasData,
     isLoading: loadingPropostas,
@@ -36,11 +36,11 @@ function Home() {
   } = useQuery({
     queryKey: ['propostas'],
     queryFn: () => base44.entities.Proposta.list(),
-    enabled: !!user, // Só busca se o usuário estiver logado
+    enabled: !!user, 
   });
   const propostas = propostasData || [];
 
-  // 3. Busca Assinatura (só roda se 'user' existir)
+  // Busca Assinatura (habilitado por 'user')
   const {
     data: assinaturaData,
     isLoading: loadingAssinatura,
@@ -48,22 +48,20 @@ function Home() {
   } = useQuery({
     queryKey: ['assinatura'],
     queryFn: async () => {
-      const data = await base44.entities.Assinatura.list(); // list() chama getUserId() que agora é seguro
+      const data = await base44.entities.Assinatura.list(); 
       return data[0] || defaultSubscription;
     },
-    enabled: !!user, // Só busca se o usuário estiver logado
+    enabled: !!user, 
   });
   const assinatura = assinaturaData || defaultSubscription;
 
-  // 4. Combina os estados
   const isLoading = loadingPropostas || loadingAssinatura;
   const error = errorPropostas || errorAssinatura;
 
-  // 5. Calcula stats e recentes (sem alteração)
+  // Calcula stats
   const stats = useMemo(() => {
-    // ... (lógica do useMemo stats) ...
     const totalPropostas = propostas.length;
-    const aprovadas = propostas.filter(p => p.status === 'Aprovada');
+    const aprovadas = propostas.filter(p => p.status === 'aprovada');
     const totalAprovadas = aprovadas.length;
     const valorTotalAprovadas = aprovadas.reduce((sum, p) => sum + (parseFloat(p.valor_total) || 0), 0);
     const taxaAprovacao = totalPropostas > 0 ? (totalAprovadas / totalPropostas) * 100 : 0;
@@ -74,6 +72,7 @@ function Home() {
     }
   }, [propostas]);
 
+  // Pega recentes
   const recentes = useMemo(() => {
     if (!Array.isArray(propostas)) return []; 
     return [...propostas]
@@ -81,12 +80,12 @@ function Home() {
       .slice(0, 3);
   }, [propostas]);
   
-  // 6. Lógica de Exclusão (sem alteração)
+  // Lógica de Exclusão
    const deleteMutation = useMutation({
        mutationFn: (id) => base44.entities.Proposta.delete(id),
        onSuccess: () => {
            queryClient.invalidateQueries({ queryKey: ['propostas'] })
-           queryClient.invalidateQueries({ queryKey: ['assinatura'] }) // Invalida assinatura se excluir afeta contagem
+           queryClient.invalidateQueries({ queryKey: ['assinatura'] })
        },
        onError: (err) => alert(`Erro ao excluir: ${err.message}`),
    });
@@ -96,7 +95,6 @@ function Home() {
        }
    };
 
-  // 7. Renderiza Loading/Error
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -107,19 +105,17 @@ function Home() {
 
   if (error) {
     return (
-      <div className="flex flex-col justify-center items-center h-screen text-red-400">
+      <div className="flex flex-col justify-center items-center h-screen text-red-400 p-4 text-center">
         <AlertCircle size={48} className="mb-4" />
         <p className="text-xl mb-4">Erro ao carregar dashboard: {error.message}</p> 
       </div>
     )
   }
 
-  // 8. Pega limites (agora localmente)
   const currentPlanName = assinatura?.plano || 'Gratuito';
   const limits = PLAN_LIMITS[currentPlanName] || PLAN_LIMITS['Gratuito'];
 
 
-  // 9. Renderiza o JSX (sem alteração no JSX)
   return (
     <div className="p-4 md:p-8 text-white">
       <div className="max-w-7xl mx-auto">
@@ -148,7 +144,7 @@ function Home() {
           </Link>
         </div>
 
-        {/* Cards de Uso */}
+        {/* Cards de Uso (com ícones e cores do design) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <UsageCard
             title="Propostas"
@@ -173,7 +169,7 @@ function Home() {
           />
         </div>
 
-        {/* Cards de Estatística */}
+        {/* Cards de Estatística (com ícones e cores do design) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <StatCard
             title="Total de Propostas"
@@ -184,14 +180,14 @@ function Home() {
           />
           <StatCard
             title="Valor Aprovado"
-            icon={Wallet}
+            icon={Wallet} // Ícone atualizado
             value={stats.valorTotal}
             subtext="Em propostas aprovadas"
             colorClass="text-green-400"
           />
           <StatCard
             title="Taxa de Aprovação"
-            icon={Target}
+            icon={CheckSquare} // Ícone atualizado (era Target)
             value={stats.taxaAprovacao}
             subtext="Propostas aprovadas"
             colorClass="text-purple-400"

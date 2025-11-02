@@ -11,9 +11,10 @@ export function StatCard({ title, value, subtext, icon, colorClass = 'text-blue-
           <p className="text-3xl font-bold text-white">{value}</p>
           <p className="text-xs text-slate-500 mt-1">{subtext}</p>
         </div>
+        {/* CORREÇÃO: Remove o fundo 'bg-slate-900' para bater com o design */}
         {IconComponent && (
-          <div className={`p-2 bg-slate-900 rounded-lg ${colorClass}`}>
-            <IconComponent size={20} />
+          <div className={`${colorClass}`}>
+            <IconComponent size={24} /> {/* Tamanho opcionalmente um pouco maior */}
           </div>
         )}
       </div>
