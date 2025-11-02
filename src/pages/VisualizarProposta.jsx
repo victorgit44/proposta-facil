@@ -1,70 +1,13 @@
 import React from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { base44 } from '../api/supabaseClient'
-import { formatCurrency, formatDate } from '../utils/formatters' // Usando o helper que criamos
+import { base44 } from '../api/supabaseClient' // Ajuste o caminho se necessário
+import { formatCurrency, formatDate } from '../utils/formatters' // Ajuste o caminho se necessário
 import { Loader2, AlertCircle, Printer, Download, ArrowLeft } from 'lucide-react'
-
-// Componente para a tabela de itens
-function ItensTable({ itens, valorTotal }) {
-  // O seu schema define 'itens' como JSONB.
-  // Vamos garantir que é um array antes de tentar usar o .map()
-  const itensProposta = Array.isArray(itens) ? itens : []
-  
-  return (
-    <div className="mt-8">
-      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
-        Itens e Valores
-      </h3>
-      <div className="flow-root">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <table className="min-w-full divide-y divide-slate-700">
-              <thead>
-                <tr>
-                  <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-0">Descrição</th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-white">Qtd.</th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-white">Valor Unit.</th>
-                  <th scope="col" className="relative py-3.5 pl-3 pr-4 text-right text-sm font-semibold text-white sm:pr-0">Total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800">
-                {/* Presumindo que seu JSONB 'itens' tem esta estrutura:
-                  [ { "descricao": "...", "quantidade": 1, "valor_unitario": 100 } ]
-                  Se for diferente, ajuste os nomes 'item.descricao', 'item.quantidade', etc.
-                */}
-                {itensProposta.map((item, index) => (
-                  <tr key={index}>
-                    <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0">{item.descricao}</td>
-                    <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-300">{item.quantidade}</td>
-                    <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-300">{formatCurrency(item.valor_unitario)}</td>
-                    <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium text-white sm:pr-0">
-                      {formatCurrency(item.quantidade * (item.valor_unitario || 0))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <th colSpan="3" scope="row" className="pt-4 pl-4 pr-3 text-right text-base font-semibold text-white sm:pl-0">VALOR TOTAL</th>
-                  <td className="pt-4 pl-3 pr-4 text-right text-2xl font-bold text-blue-400 sm:pr-0">
-                    {formatCurrency(valorTotal)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // Componente principal da página
 function VisualizarProposta() {
   const { id } = useParams()
-
-  // === INÍCIO DAS MUDANÇAS ===
 
   // 1. Busca os dados da PROPOSTA específica
   const {
@@ -79,29 +22,26 @@ function VisualizarProposta() {
 
   // 2. Busca os dados de CONFIGURAÇÃO da empresa
   const {
-    data: config,
+    data: configData, // Renomeado para não conflitar com 'config'
     isLoading: isLoadingConfig,
     error: errorConfig,
   } = useQuery({
-    queryKey: ['configuracao'],
+    queryKey: ['configuracao'], // Reutiliza a chave (já é filtrada por usuário)
     queryFn: async () => {
-      // Busca a lista de configurações
       const data = await base44.entities.ConfiguracaoEmpresa.list();
-      // Retorna a primeira configuração encontrada (ou um objeto vazio)
-      return data[0] || {};
+      return data[0] || {}; // Retorna a primeira config do usuário ou objeto vazio
     }
   })
+  // Garante que config seja um objeto mesmo se estiver carregando
+  const config = configData || {};
 
-  // Funções de ação (simuladas por enquanto)
+
+  // 3. Funções de Impressão (Baixar PDF e Imprimir)
   const handlePrint = () => {
-    window.print()
+    window.print();
   }
 
-  const handleDownload = () => {
-    alert('Função "Baixar PDF" ainda não implementada.')
-  }
-
-  // Novo estado de Loading (espera as DUAS buscas terminarem)
+  // 4. Estados de Loading e Erro
   if (isLoadingProposta || isLoadingConfig) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -110,11 +50,10 @@ function VisualizarProposta() {
     )
   }
 
-  // Novo estado de Erro (verifica as DUAS buscas)
   if (errorProposta || errorConfig || !proposta) {
     const message = errorProposta?.message || errorConfig?.message || 'Proposta não encontrada.'
     return (
-      <div className="flex flex-col justify-center items-center h-screen text-red-400">
+      <div className="flex flex-col justify-center items-center h-screen text-red-400 p-4 text-center">
         <AlertCircle size={48} className="mb-4" />
         <p className="text-xl mb-4">Erro ao carregar proposta: {message}</p>
         <Link to="/propostas" className="text-blue-400 hover:text-blue-300">
@@ -123,15 +62,18 @@ function VisualizarProposta() {
       </div>
     )
   }
+  
+  // 5. Calcula o Valor Total dos Itens
+  const valorTotalItens = (proposta.itens || []).reduce((sum, item) => {
+      return sum + (item.quantidade || 0) * (item.valor_unitario || 0);
+  }, 0);
 
-  // === FIM DAS MUDANÇAS ===
-
-
-  // Se os dados carregaram, exibe a proposta
+  // 6. Renderização do Componente
   return (
-    <div className="p-4 md:p-8 bg-slate-900 min-h-screen">
-      {/* Cabeçalho da Ação */}
-      <div className="max-w-5xl mx-auto mb-6">
+    <div className="p-4 md:p-8 bg-slate-900 min-h-screen text-slate-900"> {/* Cor base do texto para o PDF */}
+      
+      {/* Cabeçalho da Ação (NÃO SERÁ IMPRESSO) */}
+      <div className="max-w-5xl mx-auto mb-6 no-print"> 
         <div className="flex justify-between items-center">
           <Link
             to="/propostas"
@@ -148,7 +90,7 @@ function VisualizarProposta() {
               <Printer size={16} /> Imprimir PDF
             </button>
             <button
-              onClick={handleDownload}
+              onClick={handlePrint} // "Baixar" agora também chama a impressão
               className="flex items-center gap-2 text-sm text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition"
             >
               <Download size={16} /> Baixar PDF
@@ -157,26 +99,39 @@ function VisualizarProposta() {
         </div>
       </div>
 
-      {/* Container da Proposta (folha A4 simulada) */}
-      <div className="max-w-5xl mx-auto bg-white p-12 md:p-16 rounded-lg shadow-2xl text-slate-900">
-        {/* Cabeçalho da Empresa (AGORA VEM DO 'config') */}
+      {/* Container da Proposta (SERÁ IMPRESSO) */}
+      <div id="printable-area" className="max-w-5xl mx-auto bg-white p-12 md:p-16 rounded-lg shadow-2xl">
+        
+        {/* === HEADER === */}
         <header className="flex justify-between items-start pb-8 border-b border-slate-200">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-1">{config.nome_empresa || 'Sua Empresa'}</h1>
-            <p className="text-sm text-slate-600">{config.email_empresa || 'seu@email.com'}</p>
-            <p className="text-sm text-slate-600">{config.telefone_empresa || '(00) 0000-0000'}</p>
-            <p className="text-sm text-slate-600">{config.website || 'www.seusite.com.br'}</p>
+          {/* Lado Esquerdo: Logo e Infos da Empresa */}
+          <div className="flex items-start gap-4">
+            {/* Logo da Configuração */}
+            {config.logo_url && (
+              <img 
+                src={config.logo_url} 
+                alt="Logo da Empresa" 
+                className="h-16 w-16 object-contain" // Ajuste o tamanho (h-16) conforme necessário
+              />
+            )}
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900 mb-1">{config.nome_empresa || 'Sua Empresa'}</h1>
+              <p className="text-sm text-slate-600">{config.email_empresa}</p>
+              <p className="text-sm text-slate-600">{config.telefone_empresa}</p>
+              <p className="text-sm text-slate-600">{config.website}</p>
+            </div>
           </div>
+          {/* Lado Direito: Infos da Proposta */}
           <div className="text-right">
-            <h2 className="text-2xl font-bold text-blue-600 uppercase tracking-wide">Proposta Comercial</h2>
-            <p className="text-lg font-semibold text-slate-700">{proposta.numero_proposta}</p>
+            <h2 className="text-xl font-bold text-blue-600 uppercase tracking-wide">Proposta Comercial</h2>
+            <p className="text-2xl font-semibold text-slate-700">{proposta.numero_proposta}</p>
             <p className="text-sm text-slate-600 mt-2">Data: {formatDate(proposta.created_date)}</p>
             <p className="text-sm text-slate-600">Válida até: {formatDate(proposta.validade)}</p>
           </div>
         </header>
 
-        {/* Dados do Cliente (VEM DO 'proposta') */}
-        <section className="grid grid-cols-2 gap-8 mt-8">
+        {/* === DADOS DO CLIENTE === */}
+        <section className="grid grid-cols-2 gap-8 mt-8 pb-8 border-b border-slate-200">
           <div>
             <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Dados do Cliente</h3>
             <p className="text-lg font-semibold text-slate-800">{proposta.nome_cliente}</p>
@@ -190,31 +145,88 @@ function VisualizarProposta() {
           </div>
         </section>
 
-        {/* Descrição do Serviço (VEM DO 'proposta') */}
+        {/* === DESCRIÇÃO DO SERVIÇO === */}
         <section className="mt-8">
           <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Descrição do Serviço</h3>
-          <p className="text-sm text-slate-700 leading-relaxed">
-            {proposta.servico_prestado} {/* Nome do campo corrigido */}
+          <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+            {proposta.servico_prestado}
           </p>
           
-          <div className="bg-slate-100 p-4 rounded-lg mt-4">
-            <h4 className="text-sm font-semibold text-slate-800">Prazo de Entrega</h4>
-            <p className="text-lg font-bold text-blue-600">{proposta.prazo_entrega} dias</p>
+          <div className="bg-slate-100 p-4 rounded-lg mt-6">
+            <h4 className="text-sm font-semibold text-slate-800 mb-1">Prazo de Entrega</h4>
+            <p className="text-lg font-bold text-blue-600">{proposta.prazo_entrega || 'N/A'}</p>
           </div>
         </section>
 
-        {/* Itens e Valores (VEM DO 'proposta') */}
-        <section>
-          <ItensTable itens={proposta.itens} valorTotal={proposta.valor_total} />
+        {/* === ITENS E VALORES === */}
+        <section className="mt-8">
+          <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Itens e Valores</h3>
+          {/* Tabela de Itens */}
+          <table className="min-w-full mb-4">
+            <thead className="border-b border-slate-300">
+              <tr>
+                <th scope="col" className="py-2 pr-3 text-left text-sm font-semibold text-slate-600">Descrição</th>
+                <th scope="col" className="px-3 py-2 text-center text-sm font-semibold text-slate-600 w-24">Qtd.</th>
+                <th scope="col" className="px-3 py-2 text-right text-sm font-semibold text-slate-600 w-32">Valor Unit.</th>
+                <th scope="col" className="py-2 pl-3 text-right text-sm font-semibold text-slate-600 w-32">Total</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {(proposta.itens || []).map((item, index) => (
+                <tr key={index}>
+                  <td className="whitespace-pre-wrap py-3 pr-3 text-sm font-medium text-slate-800">{item.descricao}</td>
+                  <td className="px-3 py-3 text-center text-sm text-slate-600">{item.quantidade}</td>
+                  <td className="px-3 py-3 text-right text-sm text-slate-600">{formatCurrency(item.valor_unitario)}</td>
+                  <td className="py-3 pl-3 text-right text-sm font-semibold text-slate-800">
+                    {formatCurrency((item.quantidade || 0) * (item.valor_unitario || 0))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          
+          {/* Barra de Valor Total */}
+          <div className="flex justify-between items-center bg-blue-600 text-white p-4 rounded-md">
+            <span className="text-lg font-bold uppercase">Valor Total</span>
+            <span className="text-2xl font-bold">{formatCurrency(valorTotalItens)}</span>
+          </div>
         </section>
 
-        {/* Observações (VEM DO 'proposta') */}
-        <section className="mt-8 pt-8 border-t border-slate-200">
-          <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Observações</h3>
-          <p className="text-sm text-slate-700 italic">
-            {proposta.observacoes}
+        {/* === OBSERVAÇÕES === */}
+        {proposta.observacoes && (
+          <section className="mt-8">
+            <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Observações</h3>
+            <p className="text-sm text-slate-700 italic whitespace-pre-wrap">
+              {proposta.observacoes}
+            </p>
+          </section>
+        )}
+
+        {/* === TERMOS E CONDIÇÕES === */}
+        {config.termos_condicoes && (
+          <section className="mt-8 pt-8 border-t border-slate-200">
+            <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Termos e Condições</h3>
+            <div className="text-sm text-slate-700 leading-relaxed space-y-2 whitespace-pre-wrap">
+              {/* Divide os termos por linha e renderiza como lista (ou parágrafos) */}
+              {config.termos_condicoes.split('\n').map((linha, i) => (
+                <p key={i}>{linha}</p>
+              ))}
+            </div>
+          </section>
+        )}
+        
+        {/* === RODAPÉ === */}
+        <footer className="mt-12 pt-8 border-t border-slate-200 text-center">
+          {config.mensagem_rodape && (
+            <p className="text-md font-semibold text-slate-800 mb-2">{config.mensagem_rodape}</p>
+          )}
+          <p className="text-sm text-slate-600">{config.nome_empresa}</p>
+          <p className="text-sm text-slate-600">
+            {config.endereco && <span>{config.endereco}</span>}
+            {config.cnpj && <span> • CNPJ: {config.cnpj}</span>}
           </p>
-        </section>
+        </footer>
+        
       </div>
     </div>
   )

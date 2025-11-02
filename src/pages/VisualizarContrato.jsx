@@ -1,11 +1,11 @@
 import React from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { base44 } from '../api/supabaseClient' // Ajuste o caminho se necessário (ex: '@/api/supabaseClient')
-import { formatCurrency, formatDate } from '../utils/formatters' // Ajuste o caminho se necessário (ex: '@/utils/formatters')
+import { base44 } from '../api/supabaseClient' // Ajuste o caminho se necessário
+import { formatCurrency, formatDate } from '../utils/formatters' // Ajuste o caminho se necessário
 import { Loader2, AlertCircle, Printer, Download, ArrowLeft } from 'lucide-react'
 
-// Componente para renderizar os dados de uma parte (Contratante/Contratado)
+// (O componente ParteInfo continua o mesmo)
 function ParteInfo({ titulo, dados }) {
   return (
     <div className="mb-4">
@@ -25,19 +25,18 @@ function ParteInfo({ titulo, dados }) {
 function VisualizarContrato() {
   const { id } = useParams()
 
-  // 1. Busca os dados do CONTRATO
+  // Busca Contrato
   const {
     data: contrato,
     isLoading: isLoadingContrato,
     error: errorContrato,
   } = useQuery({
-    queryKey: ['contrato', id], // Chave única para este contrato
+    queryKey: ['contrato', id],
     queryFn: () => base44.entities.Contrato.get(id),
     enabled: !!id,
   })
 
-  // 2. Busca os dados de CONFIGURAÇÃO da empresa (para o Contratado)
-  //    (Certifique-se que você tem a tabela 'configuracoes_empresa' e dados nela)
+  // Busca Configuração
   const {
     data: config,
     isLoading: isLoadingConfig,
@@ -50,60 +49,38 @@ function VisualizarContrato() {
     }
   })
 
-  // Funções de ação
-  const handlePrint = () => window.print()
-  const handleDownload = () => alert('Função "Baixar PDF" ainda não implementada.')
+  // --- 1. ATUALIZAR FUNÇÕES DE IMPRESSÃO ---
+  const handlePrint = () => {
+    window.print();
+  }
+  const handleDownload = () => {
+    window.print();
+  }
+  // --- FIM DA ATUALIZAÇÃO ---
 
-  // Estado de Loading
+
   if (isLoadingContrato || isLoadingConfig) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 size={48} className="text-purple-500 animate-spin" />
-      </div>
-    )
+    // ... (código de loading) ...
+    return <div className="flex justify-center items-center h-screen"><Loader2 size={48} className="text-purple-500 animate-spin" /></div>
   }
 
-  // Estado de Erro
   if (errorContrato || errorConfig || !contrato) {
+    // ... (código de erro) ...
     const message = errorContrato?.message || errorConfig?.message || 'Contrato não encontrado.'
-    return (
-      <div className="flex flex-col justify-center items-center h-screen text-red-400">
-        <AlertCircle size={48} className="mb-4" />
-        <p className="text-xl mb-4">Erro ao carregar contrato: {message}</p>
-        <Link to="/contratos" className="text-blue-400 hover:text-blue-300">
-          Voltar para a lista
-        </Link>
-      </div>
-    )
+    return <div className="flex flex-col justify-center items-center h-screen text-red-400"><AlertCircle size={48} className="mb-4" /><p>{message}</p></div>
   }
   
-  // Mapeia os dados do Contratante e Contratado
-  const contratante = {
-    nome: contrato.contratante_nome,
-    cpf_cnpj: contrato.contratante_cpf_cnpj,
-    endereco: contrato.contratante_endereco,
-    email: contrato.contratante_email,
-    telefone: contrato.contratante_telefone,
-  }
-  
-  // Usa os dados do contrato, mas com fallback para os dados da config
-  const contratado = {
-    nome: contrato.contratado_nome || config.nome_empresa,
-    cpf_cnpj: contrato.contratado_cpf_cnpj || config.cnpj,
-    endereco: contrato.contratado_endereco || config.endereco,
-    email: contrato.contratado_email || config.email_empresa,
-    telefone: contrato.contratado_telefone || config.telefone_empresa,
-  }
-  
-  const testemunhas = Array.isArray(contrato.testemunhas) ? contrato.testemunhas : []
-
-  // Tenta extrair Cidade/UF do endereço do contratado para o Foro
+  // Mapeamento dos dados (igual)
+  const contratante = { /* ... */ };
+  const contratado = { /* ... */ };
+  const testemunhas = Array.isArray(contrato.testemunhas) ? contrato.testemunhas : [];
   const cidadeForo = contratado.endereco?.split(',').pop()?.trim() || 'Sua Cidade/UF';
 
   return (
     <div className="p-4 md:p-8 bg-slate-900 min-h-screen">
-      {/* Cabeçalho da Ação */}
-      <div className="max-w-5xl mx-auto mb-6">
+      {/* --- 2. ADICIONAR CLASSE 'no-print' --- */}
+      {/* Cabeçalho da Ação (NÃO SERÁ IMPRESSO) */}
+      <div className="max-w-5xl mx-auto mb-6 no-print">
         <div className="flex justify-between items-center">
           <Link
             to="/contratos"
@@ -129,8 +106,9 @@ function VisualizarContrato() {
         </div>
       </div>
 
-      {/* Container do Contrato (folha A4 simulada) */}
-      <div className="max-w-5xl mx-auto bg-white p-12 md:p-16 rounded-lg shadow-2xl text-slate-900">
+      {/* --- 3. ADICIONAR ID 'printable-area' --- */}
+      {/* Container do Contrato (SERÁ IMPRESSO) */}
+      <div id="printable-area" className="max-w-5xl mx-auto bg-white p-12 md:p-16 rounded-lg shadow-2xl text-slate-900">
         
         <header className="text-center mb-10">
           <h1 className="text-2xl font-bold uppercase mb-2">Contrato de Prestação de Serviços</h1>

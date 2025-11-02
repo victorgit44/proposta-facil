@@ -71,3 +71,86 @@
     background: white !important;
   }
 }
+
+/* --- Estilos de Impressão para PDF (Versão Corrigida) --- */
+@media print {
+  
+  /* 1. Corrige o aviso 'color-adjust' e força cores/fundos no PDF */
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important; /* Correção do aviso */
+  }
+
+  /* 2. Esconde o Layout (sidebar e header mobile) */
+  /* Isso se baseia no seu 'Layout.jsx' que usa <aside> e <header> */
+  aside, header {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* 3. Esconde os botões e links (header da página de visualização) */
+  /* (Os elementos que marcamos com 'no-print' nos JSPs) */
+  .no-print, .no-print * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* 4. Reseta o contêiner 'main' */
+  main {
+    margin-left: 0 !important;
+    padding-top: 0 !important;
+    background: white !important; /* Garante fundo branco para o 'main' */
+  }
+
+  /* 5. Esconde TUDO dentro de 'main' POR PADRÃO */
+  main > * {
+    visibility: hidden;
+  }
+
+  /* 6. Mostra APENAS a área imprimível e seus filhos */
+  #printable-area, #printable-area * {
+    visibility: visible;
+    color: #000 !important; /* Garante texto preto no PDF */
+    background: white !important; /* Garante fundo branco */
+  }
+
+  /* 7. Posiciona a área imprimível para preencher a página */
+  #printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: auto;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* 8. Força o texto dentro da área a ser preto (sobrescreve 'text-white' do Tailwind) */
+  #printable-area table, 
+  #printable-area th, 
+  #printable-area td,
+  #printable-area p,
+  #printable-area h1,
+  #printable-area h2,
+  #printable-area h3,
+  #printable-area span,
+  #printable-area div {
+     color: #000000 !important; 
+     background-color: #FFFFFF !important;
+  }
+  
+  /* 9. Força os links (que são azuis) a serem pretos no PDF */
+  #printable-area a {
+      color: #000000 !important;
+      text-decoration: none !important;
+  }
+  
+  /* 10. Força os blocos de fundo (como 'Prazo de Entrega') a terem fundo branco */
+  #printable-area .bg-slate-100 {
+      background-color: #FFFFFF !important;
+      border: 1px solid #EEEEEE !important; /* Adiciona uma borda leve */
+  }
+}
