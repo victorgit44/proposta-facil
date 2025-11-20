@@ -1,9 +1,9 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query'; // Importar useQuery
-import { base44 } from '@/api/supabaseClient'; // Importar base44 (ajuste o caminho se necessário)
-import { Loader2, AlertCircle } from 'lucide-react'; // Para loading/error states
+import { useQuery } from '@tanstack/react-query'; 
+import { base44, supabase } from '@/api/supabaseClient'; // Importar supabase também
+import { Loader2, AlertCircle } from 'lucide-react'; 
 
-// Definição dos planos (pode mover para um arquivo separado se preferir)
+// Definição dos planos
 const planosDisponiveis = [
   {
     nome: 'Gratuito',
@@ -14,7 +14,7 @@ const planosDisponiveis = [
   },
   {
     nome: 'Profissional',
-    preco: 'R$ 49,90', // Exemplo de preço
+    preco: 'R$ 49,90', 
     features: ['100 propostas/mês', '50 contratos/mês', '500 mensagens IA/mês', 'Sem marca d\'água'],
     color: 'from-blue-600 to-blue-700',
     icon: '⚡',
@@ -22,7 +22,7 @@ const planosDisponiveis = [
   },
   {
     nome: 'Business',
-    preco: 'R$ 149,90', // Exemplo de preço
+    preco: 'R$ 149,90', 
     features: ['Propostas ilimitadas', 'Contratos ilimitados', 'IA ilimitada', 'Multi-usuários'],
     color: 'from-purple-600 to-purple-700',
     icon: '👑'
@@ -38,28 +38,61 @@ export default function Planos() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['assinatura'], // Reutiliza a chave, pois é filtrada por usuário
+    queryKey: ['assinatura'], 
     queryFn: async () => {
       const data = await base44.entities.Assinatura.list();
-      // Retorna a assinatura ou um objeto com plano 'Gratuito' como fallback
       return data[0] || { plano: 'Gratuito' };
     },
-    staleTime: 5 * 60 * 1000, // Cache por 5 minutos
+    staleTime: 5 * 60 * 1000, 
   });
   // --- FIM DA BUSCA ---
 
   const planoAtualNome = assinatura?.plano || 'Gratuito';
 
-  // Placeholder para a função de assinatura/upgrade
-  const handleAssinar = (planoNome) => {
-      alert(`Função de assinatura/upgrade para o plano "${planoNome}" ainda não implementada.`);
-      // Aqui você integraria com Stripe, etc.
+  // --- FUNÇÃO DE CHECKOUT INTEGRADA ---
+  const handleAssinar = async (planoNome) => {
+      if (planoNome === 'Gratuito') return; // Não faz nada para o gratuito
+
+      // 1. Mapeie o nome do plano para o ID do PREÇO do Stripe (price_...)
+      // VOCÊ PRECISA PEGAR ESSES IDs NO SEU DASHBOARD DO STRIPE
+      const priceIds = {
+          'Profissional': 'price_1SL9hxKubJXy1S0w2qiNkWL3', // <--- COLE O ID DO PREÇO PROFISSIONAL AQUI
+          'Business': 'price_1SL9jfKubJXy1S0wP3QqKYJD'      // <--- COLE O ID DO PREÇO BUSINESS AQUI
+      };
+
+      const priceId = priceIds[planoNome];
+
+      if (!priceId || priceId.includes('...')) {
+          alert(`Configuração necessária: Adicione o ID do preço para o plano ${planoNome} no código.`);
+          return;
+      }
+
+      try {
+          // 2. Chama a Edge Function 'checkout'
+          const { data, error } = await supabase.functions.invoke('checkout', {
+              body: { priceId }
+          });
+
+          if (error) throw error;
+          
+          // 3. Redireciona o usuário para a página de pagamento do Stripe
+          if (data?.url) {
+              window.location.href = data.url;
+          } else {
+              throw new Error('URL de checkout não retornada pela função.');
+          }
+
+      } catch (err) {
+          console.error('Erro ao iniciar checkout:', err);
+          alert('Erro ao iniciar pagamento. Tente novamente mais tarde.');
+      }
   };
+  // --- FIM DA FUNÇÃO ---
 
   // --- ESTADOS DE LOADING E ERRO ---
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-[calc(100vh-theme(space.16))]"> {/* Altura ajustada */}
+      <div className="flex justify-center items-center h-[calc(100vh-theme(space.16))]">
         <Loader2 size={48} className="text-blue-500 animate-spin" />
       </div>
     )
@@ -73,7 +106,6 @@ export default function Planos() {
       </div>
     )
   }
-  // --- FIM DOS ESTADOS ---
 
 
   return (
@@ -90,27 +122,25 @@ export default function Planos() {
         {/* Grid de Planos */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
           {planosDisponiveis.map((plano, index) => {
-            const isCurrentPlan = plano.nome === planoAtualNome; // Verifica se é o plano atual
+            const isCurrentPlan = plano.nome === planoAtualNome;
             
             return (
               <div
                 key={index}
-                className={`flex flex-col bg-slate-800/50 border-2 rounded-xl p-8 relative transition shadow-xl ${ // Estilos base
-                  // Estilos condicionais
+                className={`flex flex-col bg-slate-800/50 border-2 rounded-xl p-8 relative transition shadow-xl ${
                   isCurrentPlan 
-                    ? 'border-green-500 ring-2 ring-green-500/50 shadow-green-500/10' // Estilo do plano atual
+                    ? 'border-green-500 ring-2 ring-green-500/50 shadow-green-500/10' 
                     : plano.popular 
-                      ? 'border-blue-500 transform md:scale-105 shadow-blue-500/20 hover:border-blue-400' // Estilo popular
-                      : 'border-slate-700 hover:border-slate-500' // Estilo padrão
+                      ? 'border-blue-500 transform md:scale-105 shadow-blue-500/20 hover:border-blue-400' 
+                      : 'border-slate-700 hover:border-slate-500'
                 }`}
               >
-                {/* Selo Popular (não mostra se for o plano atual) */}
+                {/* Selos */}
                 {plano.popular && !isCurrentPlan && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">
                     ⭐ Mais Popular
                   </div>
                 )}
-                 {/* Selo Plano Atual */}
                 {isCurrentPlan && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-green-600 text-white px-4 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">
                     ✓ Plano Atual
@@ -141,14 +171,14 @@ export default function Planos() {
                   ))}
                 </ul>
 
-                {/* Botão (com texto diferente para plano atual) */}
+                {/* Botão */}
                 <button
                   onClick={() => handleAssinar(plano.nome)}
-                  disabled={isCurrentPlan} // Desabilita o botão do plano atual
+                  disabled={isCurrentPlan}
                   className={`w-full mt-auto text-white py-3 rounded-lg font-semibold transition shadow-md ${
                     isCurrentPlan
-                      ? 'bg-slate-700 cursor-default opacity-70' // Estilo botão plano atual
-                      : `bg-gradient-to-r ${plano.color} hover:opacity-90 hover:shadow-lg` // Estilo botão outros planos
+                      ? 'bg-slate-700 cursor-default opacity-70' 
+                      : `bg-gradient-to-r ${plano.color} hover:opacity-90 hover:shadow-lg`
                   }`}
                 >
                   {isCurrentPlan ? 'Seu Plano Atual' : (index === 0 ? 'Começar Grátis' : 'Assinar Agora')}
