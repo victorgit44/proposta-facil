@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react'
-// --- 1. CORREÇÃO: Importar 'supabase' e 'queryClient' ---
 import { base44, supabase } from '@/api/supabaseClient' 
 import { queryClient } from '@/queryClient'
+import { toast } from 'sonner' // <--- 1. Importar toast
 
 export default function CriarProposta() {
   const navigate = useNavigate()
@@ -21,100 +21,83 @@ export default function CriarProposta() {
     status: 'rascunho',
     validade: '',
     itens: [{ descricao: '', quantidade: 1, valor_unitario: 0, valor_total: 0 }],
-    valor_total: 0 // Adicionado para rastrear o total
+    valor_total: 0
   })
 
+  // (Funções handleChange, handleItemChange, addItem, removeItem continuam IGUAIS - omitindo para economizar espaço)
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
-
-  // --- CORREÇÃO LÓGICA: Atualiza o valor_total global ---
   const handleItemChange = (index, field, value) => {
     const newItens = [...formData.itens]
     newItens[index][field] = field === 'descricao' ? value : parseFloat(value) || 0
-    
     if (field === 'quantidade' || field === 'valor_unitario') {
       newItens[index].valor_total = (newItens[index].quantidade || 0) * (newItens[index].valor_unitario || 0)
     }
-    
-    // Recalcula o valor_total global
     const valorTotalGlobal = newItens.reduce((sum, item) => sum + (item.valor_total || 0), 0)
-    
-    setFormData(prev => ({ 
-      ...prev, 
-      itens: newItens,
-      valor_total: valorTotalGlobal // Atualiza o valor_total no estado principal
-    }))
+    setFormData(prev => ({ ...prev, itens: newItens, valor_total: valorTotalGlobal }))
   }
-
   const addItem = () => {
-    setFormData(prev => ({
-      ...prev,
-      itens: [...prev.itens, { descricao: '', quantidade: 1, valor_unitario: 0, valor_total: 0 }]
-    }))
+    setFormData(prev => ({ ...prev, itens: [...prev.itens, { descricao: '', quantidade: 1, valor_unitario: 0, valor_total: 0 }] }))
   }
-
-  // --- CORREÇÃO LÓGICA: Atualiza o valor_total global ---
   const removeItem = (index) => {
     if (formData.itens.length === 1) return
     const newItens = formData.itens.filter((_, i) => i !== index)
-    // Recalcula o valor_total global
     const valorTotalGlobal = newItens.reduce((sum, item) => sum + (item.valor_total || 0), 0)
-    setFormData(prev => ({ 
-      ...prev, 
-      itens: newItens,
-      valor_total: valorTotalGlobal
-    }))
+    setFormData(prev => ({ ...prev, itens: newItens, valor_total: valorTotalGlobal }))
   }
 
-  // --- 2. CORREÇÃO: Lógica de 'handleSubmit' ---
+
+  // --- handleSubmit ATUALIZADO COM TOAST ---
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSaving(true)
 
+    // Notificação de carregamento (opcional, mas legal)
+    const toastId = toast.loading('Criando proposta...')
+
     try {
-      // Usa o valor_total do estado, que já está atualizado
       const valorTotal = formData.valor_total || 0;
       
+      // 1. Cria a proposta
       await base44.entities.Proposta.create({
         ...formData,
         valor_total: valorTotal
       })
       
-      // --- CÓDIGO DE INCREMENTO DE USO ---
+      // 2. Incrementa o contador
       const { error: rpcError } = await supabase.rpc('increment_usage', { item_type: 'proposta' });
-      if (rpcError) {
-          console.error('Erro ao incrementar uso da proposta:', rpcError);
-          // Não joga erro fatal, mas loga
-      }
       
-      // Invalida o cache da assinatura para atualizar contadores na UI
-      queryClient.invalidateQueries({ queryKey: ['assinatura'] });
-      // --- FIM DO CÓDIGO DE INCREMENTO ---
+      if (rpcError) {
+          console.error('Erro CRÍTICO ao incrementar uso:', rpcError);
+          throw new Error(`Falha ao registrar uso: ${rpcError.message}`);
+      }
 
+      // 3. Invalida os caches
+      queryClient.invalidateQueries({ queryKey: ['assinatura'] });
       queryClient.invalidateQueries({ queryKey: ['propostas'] });
-      alert('Proposta criada com sucesso!')
-      navigate('/propostas') // Redireciona para a lista
+      
+      // SUCESSO! Substitui o loading por sucesso
+      toast.success('Proposta criada com sucesso!', { id: toastId })
+      
+      navigate('/propostas')
+
     } catch (error) {
-      console.error("Erro completo ao criar proposta:", error)
-      alert('Erro ao criar proposta: ' + (error.message || error.details || 'Erro desconhecido'))
+      console.error("Erro:", error)
+      // ERRO! Substitui o loading por erro
+      toast.error('Erro ao criar proposta: ' + (error.message || 'Erro desconhecido'), { id: toastId })
     } finally {
       setSaving(false)
     }
   }
-  // --- FIM DA CORREÇÃO ---
 
-
-  // O JSX (visual) continua o mesmo
+  // O Return (JSX) continua IGUAL, pode manter o que você já tem.
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <button
-            onClick={() => navigate('/propostas')}
-            className="p-2 hover:bg-slate-800 rounded-lg transition text-slate-400 hover:text-white"
-          >
+          <button onClick={() => navigate('/propostas')} className="p-2 hover:bg-slate-800 rounded-lg transition text-slate-400 hover:text-white">
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div>
@@ -124,10 +107,14 @@ export default function CriarProposta() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Informações do Cliente */}
+           {/* ... Mantenha todo o seu formulário aqui ... */}
+           {/* (Como não mexemos no visual, vou omitir para economizar sua leitura, 
+               mas o formulário é o mesmo do passo anterior) */}
+           
+           {/* Apenas para garantir que você tenha o código completo para copiar e colar se preferir: */}
+           {/* Informações do Cliente */}
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
             <h2 className="text-xl font-bold text-white mb-6">📋 Informações do Cliente</h2>
-            {/* ... (Todo o JSX dos campos de Informações do Cliente) ... */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Número da Proposta *</label>
@@ -163,8 +150,7 @@ export default function CriarProposta() {
 
           {/* Detalhes do Serviço */}
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-             <h2 className="text-xl font-bold text-white mb-6">📝 Detalhes do Serviço</h2>
-             {/* ... (Todo o JSX dos campos de Detalhes do Serviço) ... */}
+            <h2 className="text-xl font-bold text-white mb-6">📝 Detalhes do Serviço</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">Serviço Prestado *</label>
@@ -196,7 +182,6 @@ export default function CriarProposta() {
                 Adicionar Item
               </button>
             </div>
-            {/* ... (Map dos itens da proposta) ... */}
             <div className="space-y-4">
               {formData.itens.map((item, index) => (
                 <div key={index} className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
@@ -240,18 +225,8 @@ export default function CriarProposta() {
 
           {/* Botões */}
           <div className="flex justify-end gap-4">
-            <button
-              type="button"
-              onClick={() => navigate('/propostas')}
-              className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg transition disabled:opacity-50"
-            >
+            <button type="button" onClick={() => navigate('/propostas')} className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition">Cancelar</button>
+            <button type="submit" disabled={saving} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg transition disabled:opacity-50">
               <Save className="w-5 h-5" />
               {saving ? 'Salvando...' : 'Salvar Proposta'}
             </button>

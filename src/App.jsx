@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './queryClient';
+import { Toaster } from 'sonner'
+import { AuthProvider, useAuth } from './context/AuthContext'
 // O AuthProvider já está no main.jsx, não precisa aqui
 
 // Layouts e Páginas Públicas
@@ -173,8 +175,8 @@ function ChatIAPage() {
           {messages.map(msg => (
             <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[70%] p-4 rounded-lg ${msg.type === 'user'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-100 border border-slate-700'
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-800 text-slate-100 border border-slate-700'
                 }`}>
                 {msg.text}
               </div>
@@ -281,40 +283,42 @@ function PlanosPage() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          {/* Rotas Públicas */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/update-password" element={<UpdatePasswordPage />} />
-          {/* <Route path="/signup" element={<SignupPage />} /> */}
+    <AuthProvider>
+      <Toaster position="top-right" richColors />
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Routes>
+            {/* Rotas Públicas */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/update-password" element={<UpdatePasswordPage />} />
+            {/* <Route path="/signup" element={<SignupPage />} /> */}
 
-          {/* Rotas Protegidas (envolvidas pelo ProtectedRoute que inclui o Layout) */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/planos" element={<Planos />} />
-            <Route path="/chat-ia" element={<ChatIA />} />
-            <Route path="/propostas" element={<Propostas />} />
-            <Route path="/propostas/criar" element={<CriarProposta />} />
-            <Route path="/propostas/ver/:id" element={<VisualizarProposta />} />
-            <Route path="/propostas/editar/:id" element={<EditarProposta />} />
-            <Route path="/contratos" element={<Contratos />} />
-            <Route path="/contratos/criar" element={<CriarContrato />} />
-            <Route path="/contratos/ver/:id" element={<VisualizarContrato />} />
-            <Route path="/contratos/editar/:id" element={<EditarContrato />} />
-            <Route path="/configuracoes" element={<Configuracoes />} />
-            {/* Adicione outras rotas protegidas aqui */}
-          </Route>
+            {/* Rotas Protegidas (envolvidas pelo ProtectedRoute que inclui o Layout) */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/planos" element={<Planos />} />
+              <Route path="/chat-ia" element={<ChatIA />} />
+              <Route path="/propostas" element={<Propostas />} />
+              <Route path="/propostas/criar" element={<CriarProposta />} />
+              <Route path="/propostas/ver/:id" element={<VisualizarProposta />} />
+              <Route path="/propostas/editar/:id" element={<EditarProposta />} />
+              <Route path="/contratos" element={<Contratos />} />
+              <Route path="/contratos/criar" element={<CriarContrato />} />
+              <Route path="/contratos/ver/:id" element={<VisualizarContrato />} />
+              <Route path="/contratos/editar/:id" element={<EditarContrato />} />
+              <Route path="/configuracoes" element={<Configuracoes />} />
+              {/* Adicione outras rotas protegidas aqui */}
+            </Route>
 
-          {/* Rota Catch-all (Opcional - redireciona para login se rota não existir) */}
-          {/* <Route path="*" element={<Navigate to="/login" replace />} /> */}
+            {/* Rota Catch-all (Opcional - redireciona para login se rota não existir) */}
+            {/* <Route path="*" element={<Navigate to="/login" replace />} /> */}
 
-        </Routes>
-      </BrowserRouter>
-    </QueryClientProvider>
-  );
+          </Routes>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </AuthProvider>);
 }
 
 export default App;
