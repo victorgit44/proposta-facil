@@ -1,335 +1,220 @@
-import React, { useState, useEffect, useRef } from 'react' // Adicione useRef
-import { useNavigate } from 'react-router-dom'
-import { Settings, Save, Loader2, AlertCircle, UploadCloud } from 'lucide-react' // Adicione UploadCloud
-import { useQuery } from '@tanstack/react-query'
-// IMPORTANTE: Precisamos do 'supabase' diretamente para invocar a função
-import { base44, supabase } from '@/api/supabaseClient' // Ajuste o caminho se necessário e importe 'supabase'
-import { queryClient } from '@/queryClient' // Ajuste o caminho se necessário
-
-// Estado inicial do formulário
-const initialState = {
-  id: null,
-  nome_empresa: '',
-  email_empresa: '',
-  telefone_empresa: '',
-  endereco: '',
-  cnpj: '',
-  website: '',
-  logo_url: '', // Mantém a URL atual
-  cor_primaria: '#2563eb',
-  cor_secundaria: '#1e293b',
-  termos_condicoes: '',
-  mensagem_rodape: '',
-}
+import React, { useState, useEffect } from 'react'
+import { Save, Upload, Loader2 } from 'lucide-react'
+import { base44, supabase } from '../api/supabaseClient'
+import { useAuth } from '../context/AuthContext'
+import { toast } from 'sonner' // <--- IMPORTANTE
 
 export default function Configuracoes() {
-  const navigate = useNavigate()
+  const { user } = useAuth()
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [formData, setFormData] = useState(initialState)
-  const [selectedFile, setSelectedFile] = useState(null) // Para guardar o arquivo selecionado
-  const [previewUrl, setPreviewUrl] = useState(null) // Para mostrar a prévia do logo
-  const fileInputRef = useRef(null); // Para acionar o input de arquivo
-
-  // 1. BUSCAR A CONFIGURAÇÃO EXISTENTE
-  const {
-    data: config,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['configuracao'],
-    queryFn: async () => {
-      const data = await base44.entities.ConfiguracaoEmpresa.list();
-      return data[0] || initialState;
-    },
-    staleTime: Infinity,
+  const [logoFile, setLogoFile] = useState(null)
+  
+  const [formData, setFormData] = useState({
+    nome_empresa: '',
+    cnpj: '',
+    email_empresa: '',
+    telefone_empresa: '',
+    endereco: '',
+    website: '',
+    logo_url: '',
+    cor_primaria: '#2563eb',
+    mensagem_rodape: '',
+    termos_condicoes: ''
   })
 
-  // 2. PREENCHER O FORMULÁRIO QUANDO OS DADOS CHEGAREM
+  // Carrega configurações
   useEffect(() => {
-    if (config) {
-      setFormData({
-        ...initialState,
-        ...config,
-      });
-      // Define a URL de prévia inicial se já existir um logo
-      if (config.logo_url) {
-        setPreviewUrl(config.logo_url);
-      }
-    }
-  }, [config])
-
-  const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
-
-  // --- Funções para Upload de Logo ---
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file && ['image/png', 'image/jpeg', 'image/jpg'].includes(file.type) && file.size <= 5 * 1024 * 1024) { // Adicionado image/jpg
-      setSelectedFile(file);
-      // Cria uma URL temporária para a prévia
-      setPreviewUrl(URL.createObjectURL(file));
-    } else {
-      setSelectedFile(null);
-      setPreviewUrl(formData.logo_url); // Volta para a URL salva se o arquivo for inválido
-      alert('Por favor, selecione um arquivo PNG ou JPG com no máximo 5MB.');
-    }
-  }
-
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
-  }
-
-  // --- NOVA VERSÃO da Função uploadLogo ---
-  // Função para CHAMAR a Edge Function de upload
-  const uploadLogo = async (file) => {
-    if (!file) return null;
-
-    setSaving(true);
-    console.log(`Chamando a função 'upload-logo' com o arquivo: ${file.name}`);
-    // Log para verificar autenticação ANTES de invocar
-    console.log('Verificando auth antes de invocar:', await supabase.auth.getUser());
-
-    // Cria um FormData para enviar o arquivo
-    const formData = new FormData();
-    formData.append('logoFile', file); // 'logoFile' deve bater com o nome na função
-
-    try {
-      // Invoca a Edge Function 'upload-logo'
-      const { data, error } = await supabase.functions.invoke('upload-logo', {
-        body: formData, // Envia o arquivo como FormData
-      });
-
-      if (error) {
-        console.error('Erro ao invocar a função Edge:', error);
-        // Tenta dar uma mensagem de erro mais específica
-        let errorMessage = error.message;
-        if (error instanceof Error && error.message.includes('Function returned an error')) {
-             try {
-                // Tenta pegar a mensagem de erro retornada pela própria função
-                const functionError = error.context?.data?.error || JSON.parse(error.message.split(': ')[1] || '{}').error;
-                 if (functionError) errorMessage = functionError;
-             } catch(e) { /* Ignora erro de parsing */ }
+    async function loadConfig() {
+      if (!user) return
+      try {
+        const configs = await base44.entities.ConfiguracaoEmpresa.list()
+        if (configs && configs.length > 0) {
+          setFormData(configs[0])
         }
-        throw new Error(`Erro ao chamar a função de upload: ${errorMessage}`);
+      } catch (error) {
+        console.error('Erro ao carregar configs:', error)
+        toast.error('Erro ao carregar configurações.')
+      } finally {
+        setLoading(false)
       }
+    }
+    loadConfig()
+  }, [user])
 
-      console.log('Resposta da função Edge:', data);
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
 
-      // A função retorna { logoUrl: '...' }
-      if (!data?.logoUrl) {
-         throw new Error('A função de upload não retornou uma URL válida.');
-      }
-
-      return data.logoUrl; // Retorna a URL pública recebida da função
-
-    } finally {
-      setSaving(false);
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setLogoFile(e.target.files[0])
     }
   }
-  // --- Fim da NOVA Função de Upload ---
 
-  // 3. FUNÇÃO PARA SALVAR (COM LÓGICA DE UPLOAD)
-  const handleSubmit = async (e) => {
+  // Função para converter arquivo em Base64
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = error => reject(error)
+    })
+  }
+
+  const handleSave = async (e) => {
     e.preventDefault()
     setSaving(true)
+    
+    // Inicia toast de carregamento
+    const toastId = toast.loading('Salvando configurações...')
 
     try {
-      let newLogoUrl = formData.logo_url; // Assume a URL atual
+      let finalLogoUrl = formData.logo_url
 
-      // Se um novo arquivo foi selecionado, faz o upload via Edge Function
-      if (selectedFile) {
-        console.log("Novo arquivo selecionado, iniciando chamada da função...");
-        newLogoUrl = await uploadLogo(selectedFile); // Chama a NOVA função uploadLogo
-        if (!newLogoUrl) {
-          throw new Error("Falha ao obter URL pública do logo após upload via função.");
+      // 1. Upload do Logo (se houver novo arquivo)
+      if (logoFile) {
+        toast.loading('Enviando logo...', { id: toastId }) // Atualiza mensagem
+        
+        const base64File = await fileToBase64(logoFile)
+        
+        // Chama a Edge Function 'upload-logo'
+        const { data, error } = await supabase.functions.invoke('upload-logo', {
+          body: {
+            image: base64File,
+            filename: logoFile.name
+          }
+        })
+
+        if (error) throw error
+        if (data?.url) {
+          finalLogoUrl = data.url
         }
-        console.log("Função concluída, nova URL:", newLogoUrl);
+      }
+
+      // 2. Salvar no Banco
+      const dadosParaSalvar = { ...formData, logo_url: finalLogoUrl }
+      
+      // Verifica se já existe config para atualizar ou criar
+      const configs = await base44.entities.ConfiguracaoEmpresa.list()
+      
+      if (configs.length > 0) {
+        await base44.entities.ConfiguracaoEmpresa.update(configs[0].id, dadosParaSalvar)
       } else {
-        console.log("Nenhum arquivo novo selecionado, mantendo logo_url atual.");
+        await base44.entities.ConfiguracaoEmpresa.create(dadosParaSalvar)
       }
 
-      // Prepara os dados para salvar na tabela 'configuracoes_empresa'
-      const dataToSave = {
-        ...formData,
-        logo_url: newLogoUrl, // Usa a nova URL (se houver) ou a antiga
-      };
-
-      // Remove o ID nulo se for uma criação
-      if (!dataToSave.id) {
-        delete dataToSave.id;
-      }
-
-      let savedConfig;
-      if (formData.id) {
-        console.log("Atualizando configuração ID:", formData.id);
-        savedConfig = await base44.entities.ConfiguracaoEmpresa.update(formData.id, dataToSave);
-      } else {
-        console.log("Criando nova configuração...");
-        savedConfig = await base44.entities.ConfiguracaoEmpresa.create(dataToSave);
-        setFormData(prev => ({ ...prev, id: savedConfig.id }));
-        console.log("Configuração criada, ID:", savedConfig.id);
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['configuracao'] })
-      setSelectedFile(null);
-      setPreviewUrl(newLogoUrl); // Atualiza preview com a URL final
-
-      alert('Configurações salvas com sucesso!')
+      // Atualiza estado local
+      setFormData(dadosParaSalvar)
+      setLogoFile(null)
+      
+      // Sucesso!
+      toast.success('Configurações salvas com sucesso!', { id: toastId })
 
     } catch (error) {
-      console.error("Erro completo ao salvar:", error);
-      alert('Erro ao salvar configurações: ' + error.message)
+      console.error('Erro ao salvar:', error)
+      toast.error('Erro ao salvar: ' + (error.message || 'Erro desconhecido'), { id: toastId })
     } finally {
       setSaving(false)
     }
   }
 
-  // 4. ESTADOS DE LOADING E ERRO
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 size={48} className="text-blue-500 animate-spin" />
-      </div>
-    )
-  }
-  if (error) {
-    return (
-      <div className="flex flex-col justify-center items-center h-screen text-red-400">
-        <AlertCircle size={48} className="mb-4" />
-        <p>Erro ao carregar configurações: {error.message}</p>
-      </div>
-    )
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen"><Loader2 className="animate-spin text-blue-500" size={48} /></div>
   }
 
-  // 5. RENDERIZAÇÃO DO FORMULÁRIO
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 md:p-8">
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <div className="p-3 bg-blue-600 rounded-lg">
-             <Settings className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-white">Configurações</h1>
-            <p className="text-slate-400">Configure os dados da sua empresa</p>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-
-          {/* Informações da Empresa */}
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-white mb-6">🏢 Informações da Empresa</h2>
-
-            {/* Logo */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-300 mb-2">Logotipo da Empresa</label>
-              <div className="flex items-center gap-4 p-4 bg-slate-900 border border-slate-700 rounded-lg">
-                <div className="w-16 h-16 bg-slate-700 rounded-md flex items-center justify-center text-slate-500 overflow-hidden">
-                  {previewUrl ? (
-                     <img src={previewUrl} alt="Logo Preview" className="w-full h-full object-contain" />
-                  ) : (
-                    <UploadCloud size={24} />
-                  )}
+    <div className="p-4 md:p-8 text-white min-h-screen">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8">⚙️ Configurações da Empresa</h1>
+        
+        <form onSubmit={handleSave} className="space-y-8">
+          
+          {/* Logo e Identidade */}
+          <section className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+            <h2 className="text-xl font-semibold mb-4 text-blue-400">Identidade Visual</h2>
+            <div className="flex flex-col md:flex-row gap-6 items-start">
+              <div className="flex-1 w-full">
+                <label className="block text-sm text-slate-400 mb-2">Logo da Empresa</label>
+                <div className="flex items-center gap-4">
+                  {/* Preview */}
+                  <div className="w-24 h-24 bg-slate-900 border border-slate-600 rounded-lg flex items-center justify-center overflow-hidden">
+                    {logoFile ? (
+                      <img src={URL.createObjectURL(logoFile)} alt="Preview" className="w-full h-full object-contain" />
+                    ) : formData.logo_url ? (
+                      <img src={formData.logo_url} alt="Logo Atual" className="w-full h-full object-contain" />
+                    ) : (
+                      <Upload className="text-slate-500" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+                    />
+                    <p className="text-xs text-slate-500 mt-2">Recomendado: PNG ou JPG transparente.</p>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={triggerFileInput}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition"
-                >
-                  Escolher arquivo
-                </button>
-                <span className="text-sm text-slate-500 flex-1 truncate">
-                   {selectedFile ? selectedFile.name : 'Nenhum arquivo escolhido'} (PNG, JPG até 5MB)
-                </span>
-                 <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/png, image/jpeg, image/jpg" // Adicionado image/jpg
-                    onChange={handleFileChange}
-                    className="hidden"
-                 />
               </div>
             </div>
+          </section>
 
-            {/* Outros campos */}
+          {/* Dados da Empresa */}
+          <section className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+            <h2 className="text-xl font-semibold mb-4 text-blue-400">Dados da Empresa</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Nome da Empresa</label>
-                <input type="text" value={formData.nome_empresa} onChange={(e) => handleChange('nome_empresa', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" />
+                <label className="block text-sm text-slate-400 mb-1">Nome da Empresa</label>
+                <input type="text" name="nome_empresa" value={formData.nome_empresa} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">CNPJ</label>
-                <input type="text" value={formData.cnpj} onChange={(e) => handleChange('cnpj', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" />
+                <label className="block text-sm text-slate-400 mb-1">CNPJ</label>
+                <input type="text" name="cnpj" value={formData.cnpj} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
-                <input type="email" value={formData.email_empresa} onChange={(e) => handleChange('email_empresa', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" />
+                <label className="block text-sm text-slate-400 mb-1">Email de Contato</label>
+                <input type="email" name="email_empresa" value={formData.email_empresa} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Telefone</label>
-                <input type="tel" value={formData.telefone_empresa} onChange={(e) => handleChange('telefone_empresa', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" />
+                <label className="block text-sm text-slate-400 mb-1">Telefone</label>
+                <input type="text" name="telefone_empresa" value={formData.telefone_empresa} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white" />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Website</label>
-                <input type="url" value={formData.website} onChange={(e) => handleChange('website', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" />
+              <div className="md:col-span-2">
+                <label className="block text-sm text-slate-400 mb-1">Endereço Completo</label>
+                <input type="text" name="endereco" value={formData.endereco} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white" />
               </div>
-               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Endereço</label>
-                <input type="text" value={formData.endereco} onChange={(e) => handleChange('endereco', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" />
+              <div className="md:col-span-2">
+                <label className="block text-sm text-slate-400 mb-1">Website</label>
+                <input type="text" name="website" value={formData.website} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white" />
               </div>
             </div>
-          </div>
-
-          {/* Cores da Marca */}
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-white mb-6">🎨 Cores da Marca</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Cor Primária</label>
-                <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2">
-                  <input type="color" value={formData.cor_primaria} onChange={(e) => handleChange('cor_primaria', e.target.value)} className="w-8 h-8 rounded border-none cursor-pointer p-0" style={{ backgroundColor: formData.cor_primaria }} />
-                  <input type="text" value={formData.cor_primaria} onChange={(e) => handleChange('cor_primaria', e.target.value)} className="flex-1 bg-transparent text-white focus:outline-none" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Cor Secundária</label>
-                 <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2">
-                   <input type="color" value={formData.cor_secundaria} onChange={(e) => handleChange('cor_secundaria', e.target.value)} className="w-8 h-8 rounded border-none cursor-pointer p-0" style={{ backgroundColor: formData.cor_secundaria }}/>
-                   <input type="text" value={formData.cor_secundaria} onChange={(e) => handleChange('cor_secundaria', e.target.value)} className="flex-1 bg-transparent text-white focus:outline-none" />
-                </div>
-              </div>
-            </div>
-          </div>
+          </section>
 
           {/* Textos Padrão */}
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-white mb-6">✍️ Textos Padrão</h2>
+          <section className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+            <h2 className="text-xl font-semibold mb-4 text-blue-400">Textos Padrão</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Termos e Condições</label>
-                <textarea value={formData.termos_condicoes} onChange={(e) => handleChange('termos_condicoes', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white h-32 focus:outline-none focus:border-blue-500" placeholder="Digite os termos e condições padrão que aparecerão nas propostas" />
+                <label className="block text-sm text-slate-400 mb-1">Termos e Condições (Padrão para Propostas)</label>
+                <textarea name="termos_condicoes" rows="4" value={formData.termos_condicoes} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white" placeholder="Ex: Validade da proposta de 15 dias..." />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Mensagem do Rodapé</label>
-                <textarea value={formData.mensagem_rodape} onChange={(e) => handleChange('mensagem_rodape', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white h-24 focus:outline-none focus:border-blue-500" placeholder="Mensagem que aparece no rodapé das propostas" />
+                <label className="block text-sm text-slate-400 mb-1">Mensagem de Rodapé</label>
+                <input type="text" name="mensagem_rodape" value={formData.mensagem_rodape} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white" placeholder="Ex: Obrigado pela preferência!" />
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Botão Salvar */}
-          <div className="flex justify-end gap-4 pt-4">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg transition disabled:opacity-50"
-            >
-              <Save className="w-5 h-5" />
-              {saving ? 'Salvando...' : 'Salvar Configurações'}
+          <div className="flex justify-end pt-4">
+            <button type="submit" disabled={saving} className="flex items-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition disabled:opacity-50">
+              <Save size={20} />
+              {saving ? 'Salvando...' : 'Salvar Alterações'}
             </button>
           </div>
+
         </form>
       </div>
     </div>
