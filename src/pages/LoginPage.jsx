@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, FileText, ShieldCheck, Layers, ArrowRight, Loader2, AlertCircle, CheckCircle2, TrendingUp } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { supabase } from '@/api/supabaseClient';
 
 export default function LoginPage() {
@@ -61,14 +62,51 @@ export default function LoginPage() {
   return (
     <div className="relative min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-hidden font-sans selection:bg-blue-600 selection:text-white">
       {/* ------------------------------------------------------------- */}
-      {/* ELEMENTOS VISUAIS DE FUNDO (ELEGANT GLOW SUTIL)               */}
+      {/* ELEMENTOS VISUAIS DE FUNDO (ELEGANT ANIMATED GLOW SUTIL)      */}
       {/* ------------------------------------------------------------- */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-tr from-blue-900/15 via-indigo-900/15 to-slate-900/20 rounded-full blur-[160px] pointer-events-none" />
-      <div className="absolute bottom-10 left-10 w-80 h-80 bg-blue-600/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute top-10 right-10 w-80 h-80 bg-slate-800/20 rounded-full blur-[140px] pointer-events-none" />
+      <motion.div
+        animate={{
+          scale: [1, 1.15, 1],
+          opacity: [0.2, 0.4, 0.2],
+        }}
+        transition={{
+          duration: 8,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-tr from-blue-600/20 via-indigo-600/20 to-purple-600/15 rounded-full blur-[160px] pointer-events-none"
+      />
+
+      <motion.div
+        animate={{
+          x: [0, 35, -20, 0],
+          y: [0, -30, 20, 0],
+          opacity: [0.2, 0.45, 0.2],
+        }}
+        transition={{
+          duration: 12,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="absolute bottom-10 left-10 w-96 h-96 bg-blue-600/20 rounded-full blur-[140px] pointer-events-none"
+      />
+
+      <motion.div
+        animate={{
+          x: [0, -35, 25, 0],
+          y: [0, 25, -20, 0],
+          opacity: [0.15, 0.35, 0.15],
+        }}
+        transition={{
+          duration: 10,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="absolute top-10 right-10 w-96 h-96 bg-indigo-600/20 rounded-full blur-[140px] pointer-events-none"
+      />
 
       {/* Grid sutil de fundo */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b12_1px,transparent_1px),linear-gradient(to_bottom,#1e293b12_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none" />
 
       {/* ------------------------------------------------------------- */}
       {/* CONTAINER PRINCIPAL SPLIT SCREEN CORPORATIVO                  */}
