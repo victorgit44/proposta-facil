@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.SERVER_PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'proposta_facil_super_secret_jwt_key_2026';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const GOOGLE_API_KEY = process.env.VITE_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY;
@@ -57,15 +57,15 @@ app.use(express.json({ limit: '10mb' }));
 // -------------------------------------------------------------
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 15,
-  message: { error: 'Muitas tentativas de acesso. Por favor, tente novamente em 15 minutos.' },
+  max: 100,
+  message: { error: 'Muitas tentativas de acesso. Por favor, tente novamente em alguns minutos.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 300,
+  max: 500,
   message: { error: 'Limite de requisições excedido. Tente novamente mais tarde.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -99,8 +99,8 @@ const authenticateToken = (req, res, next) => {
 
 // Helper de erro seguro
 const handleServerError = (res, error, customMessage = 'Erro interno do servidor.') => {
-  console.error('Erro na API:', error);
-  const message = process.env.NODE_ENV === 'production' ? customMessage : (error.message || customMessage);
+  console.error('❌ Erro na API:', error);
+  const message = error.message || customMessage;
   return res.status(500).json({ error: message });
 };
 

@@ -36,19 +36,27 @@ const pool = mysql.createPool({
 // Resiliência Automática: Intercepta e Tenta Novamente em caso de ECONNRESET / Desconexão
 const rawQuery = pool.query.bind(pool);
 pool.query = async function (...args) {
-  try {
-    return await rawQuery(...args);
-  } catch (err) {
-    if (
-      err.code === 'ECONNRESET' ||
-      err.code === 'PROTOCOL_CONNECTION_LOST' ||
-      err.code === 'ETIMEDOUT' ||
-      err.message?.includes('read ECONNRESET')
-    ) {
-      console.warn('⚠️ Conexão MariaDB resetada pela VPS (ECONNRESET). Reconectando automaticamente...');
+  let attempts = 0;
+  while (attempts < 3) {
+    try {
       return await rawQuery(...args);
+    } catch (err) {
+      attempts++;
+      const isNetworkError =
+        err.code === 'ECONNRESET' ||
+        err.code === 'PROTOCOL_CONNECTION_LOST' ||
+        err.code === 'ETIMEDOUT' ||
+        err.code === 'PROTOCOL_ENQUEUE_AFTER_FATAL_ERROR' ||
+        err.message?.includes('ECONNRESET') ||
+        err.message?.includes('closed');
+
+      if (isNetworkError && attempts < 3) {
+        console.warn(`⚠️ Conexão MariaDB resetada pela VPS (tentativa ${attempts}/3). Reconectando em 300ms...`);
+        await new Promise(r => setTimeout(r, 300));
+        continue;
+      }
+      throw err;
     }
-    throw err;
   }
 };
 
