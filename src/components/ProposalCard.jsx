@@ -29,42 +29,42 @@ export function ProposalCard({ proposta, onExcluir }) {
   const badge = getStatusBadge(status);
 
   return (
-    <div className="group rounded-lg bg-[#111118] border border-[#1e1e2e] hover:border-[#2a2a3e] transition p-4">
+    <div className="group rounded-lg bg-[#111118] border border-[#1e1e2e] hover:border-[#2a2a3e] transition p-5">
 
       {/* Top: client + status */}
       <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-md bg-[#1a1a24] border border-[#1e1e2e] flex items-center justify-center text-[#8888a0] text-[11px] font-semibold shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-lg bg-[#1a1a24] border border-[#1e1e2e] flex items-center justify-center text-[#8888a0] text-sm font-semibold shrink-0">
             {nome_cliente?.charAt(0).toUpperCase() || 'P'}
           </div>
           <div className="min-w-0">
-            <h3 className="text-sm font-medium text-white truncate group-hover:text-blue-400 transition-colors">
+            <h3 className="text-[15px] font-medium text-white truncate group-hover:text-blue-400 transition-colors">
               {nome_cliente || 'Cliente não especificado'}
             </h3>
-            <p className="text-[12px] text-[#555568] truncate">
+            <p className="text-sm text-[#8888a0] truncate">
               {servico_prestado || 'Proposta comercial'}
             </p>
           </div>
         </div>
 
-        <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${badge.textColor} shrink-0`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${badge.dotColor}`} />
+        <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${badge.textColor} shrink-0`}>
+          <span className={`w-2 h-2 rounded-full ${badge.dotColor}`} />
           {badge.label}
         </span>
       </div>
 
       {/* Meta */}
-      <div className="flex items-center gap-3 text-[11px] text-[#555568] mb-3 pb-3 border-b border-[#1e1e2e]">
-        <span className="font-medium text-[#8888a0]">N.{numero_proposta || 'PROP-001'}</span>
-        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{dataFormatada}</span>
-        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{prazo_entrega || 'Em aberto'}</span>
+      <div className="flex items-center gap-3 text-xs text-[#8888a0] mb-3 pb-3 border-b border-[#1e1e2e]">
+        <span className="font-medium text-[#c0c0d0]">N.{numero_proposta || 'PROP-001'}</span>
+        <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{dataFormatada}</span>
+        <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{prazo_entrega || 'Em aberto'}</span>
       </div>
 
       {/* Bottom: value + actions */}
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-[10px] font-medium uppercase tracking-wider text-[#555568] block">Valor</span>
-          <span className="text-lg font-semibold text-white tabular-nums">{formatCurrency(valor_total)}</span>
+          <span className="text-xs font-medium uppercase tracking-wider text-[#8888a0] block">Valor Total</span>
+          <span className="text-xl font-semibold text-white tabular-nums">{formatCurrency(valor_total)}</span>
         </div>
 
         <div className="flex items-center gap-1">
@@ -74,31 +74,31 @@ export function ProposalCard({ proposta, onExcluir }) {
               navigator.clipboard.writeText(publicUrl);
               toast.success('Link público copiado!');
             }}
-            className="p-1.5 text-[#555568] hover:text-blue-400 rounded-md transition cursor-pointer"
+            className="p-2 text-[#555568] hover:text-blue-400 rounded-lg transition cursor-pointer"
             title="Copiar link público"
           >
-            <Share2 className="w-3.5 h-3.5" />
+            <Share2 className="w-4 h-4" />
           </button>
           <Link
             to={`/propostas/ver/${id}`}
-            className="p-1.5 text-[#555568] hover:text-white rounded-md transition"
+            className="p-2 text-[#555568] hover:text-white rounded-lg transition"
             title="Visualizar"
           >
-            <Eye className="w-3.5 h-3.5" />
+            <Eye className="w-4 h-4" />
           </Link>
           <Link
             to={`/propostas/editar/${id}`}
-            className="p-1.5 text-[#555568] hover:text-white rounded-md transition"
+            className="p-2 text-[#555568] hover:text-white rounded-lg transition"
             title="Editar"
           >
-            <Edit2 className="w-3.5 h-3.5" />
+            <Edit2 className="w-4 h-4" />
           </Link>
           <button
             onClick={() => onExcluir(id)}
-            className="p-1.5 text-[#555568] hover:text-red-400 rounded-md transition cursor-pointer"
+            className="p-2 text-[#555568] hover:text-red-400 rounded-lg transition cursor-pointer"
             title="Excluir"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>
