@@ -1,5 +1,5 @@
 import pool from './db.js';
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'node:url';
 
 export async function initDb() {
   console.log('🔄 Verificando e criando estrutura de tabelas no MariaDB...');
