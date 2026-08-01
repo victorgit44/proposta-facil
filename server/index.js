@@ -437,7 +437,14 @@ app.get('/api/propostas/public/:id', async (req, res) => {
       } catch (e) {}
     }
 
-    delete proposta.user_id; // Remove user_id da resposta pública por segurança
+    // Registrar evento de auditoria comercial OPENED
+    const clientIp = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+    try {
+      await pool.query(
+        'INSERT INTO proposta_eventos (proposta_id, tipo, descricao, ip_origem) VALUES (?, ?, ?, ?)',
+        [req.params.id, 'OPENED', 'Proposta aberta e visualizada pelo cliente no navegador.', clientIp]
+      );
+    } catch (e) {}
 
     return res.json({
       ...proposta,
@@ -451,6 +458,127 @@ app.get('/api/propostas/public/:id', async (req, res) => {
     });
   } catch (error) {
     return handleServerError(res, error, 'Erro ao carregar proposta pública.');
+  }
+});
+
+// Registrar Comentário Comercial na Proposta Pública
+app.get('/api/propostas/public/:id/comentarios', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, autor, is_cliente, mensagem, created_at FROM proposta_comentarios WHERE proposta_id = ? ORDER BY created_at ASC',
+      [req.params.id]
+    );
+    return res.json(rows);
+  } catch (error) {
+    return res.json([]);
+  }
+});
+
+app.post('/api/propostas/public/:id/comentarios', async (req, res) => {
+  try {
+    const { autor, mensagem, is_cliente } = req.body;
+    if (!mensagem || !mensagem.trim()) return res.status(400).json({ error: 'Mensagem vazia.' });
+
+    await pool.query(
+      'INSERT INTO proposta_comentarios (proposta_id, autor, is_cliente, mensagem) VALUES (?, ?, ?, ?)',
+      [req.params.id, autor || 'Cliente', is_cliente ? 1 : 0, mensagem.trim()]
+    );
+
+    const clientIp = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+    try {
+      await pool.query(
+        'INSERT INTO proposta_eventos (proposta_id, tipo, descricao, ip_origem) VALUES (?, ?, ?, ?)',
+        [req.params.id, 'COMMENTED', `Novo comentário enviado: "${mensagem.trim()}"`, clientIp]
+      );
+    } catch (e) {}
+
+    return res.json({ success: true });
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao enviar comentário.');
+  }
+});
+
+// ==========================================
+// ROTAS DE PRODUTOS & BIBLIOTECA (AUTENTICADAS)
+// ==========================================
+
+app.get('/api/produtos', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM produtos WHERE user_id = ? ORDER BY created_at DESC', [req.user.id]);
+    return res.json(rows);
+  } catch (error) {
+    return res.json([]);
+  }
+});
+
+app.post('/api/produtos', authenticateToken, async (req, res) => {
+  try {
+    const { nome, categoria, descricao, preco_unitario } = req.body;
+    if (!nome || !nome.trim()) return res.status(400).json({ error: 'Nome do produto é obrigatório.' });
+
+    const [result] = await pool.query(
+      'INSERT INTO produtos (user_id, nome, categoria, descricao, preco_unitario) VALUES (?, ?, ?, ?, ?)',
+      [req.user.id, nome.trim(), categoria || 'Geral', descricao || '', parseFloat(preco_unitario) || 0.00]
+    );
+
+    return res.json({ id: result.insertId, success: true });
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao salvar produto.');
+  }
+});
+
+app.delete('/api/produtos/:id', authenticateToken, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM produtos WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    return res.json({ success: true });
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao excluir produto.');
+  }
+});
+
+app.get('/api/biblioteca', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM biblioteca_blocos WHERE user_id = ? ORDER BY created_at DESC', [req.user.id]);
+    return res.json(rows);
+  } catch (error) {
+    return res.json([]);
+  }
+});
+
+app.post('/api/biblioteca', authenticateToken, async (req, res) => {
+  try {
+    const { titulo, categoria, conteudo } = req.body;
+    if (!titulo || !conteudo) return res.status(400).json({ error: 'Título e conteúdo são obrigatórios.' });
+
+    const [result] = await pool.query(
+      'INSERT INTO biblioteca_blocos (user_id, titulo, categoria, conteudo) VALUES (?, ?, ?, ?)',
+      [req.user.id, titulo.trim(), categoria || 'servicos', conteudo.trim()]
+    );
+
+    return res.json({ id: result.insertId, success: true });
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao salvar bloco.');
+  }
+});
+
+app.delete('/api/biblioteca/:id', authenticateToken, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM biblioteca_blocos WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    return res.json({ success: true });
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao excluir bloco.');
+  }
+});
+
+app.get('/api/propostas/:id/eventos', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, tipo, descricao, ip_origem, created_at FROM proposta_eventos WHERE proposta_id = ? ORDER BY created_at DESC',
+      [req.params.id]
+    );
+    return res.json(rows);
+  } catch (error) {
+    return res.json([]);
   }
 });
 

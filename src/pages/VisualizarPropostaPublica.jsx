@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchApi } from '@/api/apiClient';
 import { 
   FileText, CheckCircle2, XCircle, Clock, ShieldCheck, 
-  Send, Sparkles, Building2, User, Calendar, Loader2, AlertCircle, Check
+  Send, Sparkles, Building2, User, Calendar, Loader2, AlertCircle, Check, MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function VisualizarPropostaPublica() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [signerName, setSignerName] = useState('');
   const [rejectReason, setRejectReason] = useState('');
+  const [novoComentario, setNovoComentario] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const {
@@ -26,6 +28,24 @@ export default function VisualizarPropostaPublica() {
     queryKey: ['propostaPublica', id],
     queryFn: () => fetchApi(`/api/propostas/public/${id}`),
     enabled: !!id,
+  });
+
+  const { data: comentarios = [] } = useQuery({
+    queryKey: ['propostaComentarios', id],
+    queryFn: () => fetchApi(`/api/propostas/public/${id}/comentarios`),
+    enabled: !!id,
+  });
+
+  const commentMutation = useMutation({
+    mutationFn: (msg) => fetchApi(`/api/propostas/public/${id}/comentarios`, {
+      method: 'POST',
+      body: JSON.stringify({ autor: proposta?.nome_cliente || 'Cliente', mensagem: msg, is_cliente: true })
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['propostaComentarios', id]);
+      setNovoComentario('');
+      toast.success('Comentário enviado ao vendedor com sucesso!');
+    }
   });
 
   const handleAccept = async (e) => {
@@ -230,6 +250,50 @@ export default function VisualizarPropostaPublica() {
               R$ {(parseFloat(proposta.valor_total) || 0).toFixed(2)}
             </span>
           </div>
+        </div>
+
+        {/* Canal de Comentários / Dúvidas sobre a Negociação Proposify Style */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-6">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-blue-400" />
+            <h2 className="text-xs font-extrabold uppercase tracking-wider text-blue-400">Comentários & Negociação da Proposta</h2>
+          </div>
+
+          <div className="space-y-4 max-h-60 overflow-y-auto pr-1">
+            {comentarios.length === 0 ? (
+              <p className="text-xs text-slate-500 italic">Nenhum comentário enviado. Utilize o campo abaixo para tirar dúvidas ou negociar prazos com o vendedor.</p>
+            ) : (
+              comentarios.map((c) => (
+                <div key={c.id} className={`p-4 rounded-2xl border text-xs space-y-1 ${c.is_cliente ? 'bg-slate-950 border-slate-800' : 'bg-blue-500/10 border-blue-500/20 text-blue-200'}`}>
+                  <div className="flex items-center justify-between font-bold text-[10px] text-slate-400">
+                    <span>{c.autor}</span>
+                    <span>{new Date(c.created_at).toLocaleString('pt-BR')}</span>
+                  </div>
+                  <p className="text-slate-200">{c.mensagem}</p>
+                </div>
+              ))
+            )}
+          </div>
+
+          {!isApproved && (
+            <div className="flex gap-2 pt-2">
+              <input
+                type="text"
+                placeholder="Escreva um comentário ou proposta de alteração..."
+                value={novoComentario}
+                onChange={(e) => setNovoComentario(e.target.value)}
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+              />
+              <button
+                onClick={() => commentMutation.mutate(novoComentario)}
+                disabled={!novoComentario.trim()}
+                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Enviar</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Observações */}

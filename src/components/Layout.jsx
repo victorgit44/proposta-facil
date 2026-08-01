@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   Home, FileText, FileSignature, MessageSquare,
   Settings, Sparkles, Menu, X, LogOut, User, Zap, ChevronRight,
-  Kanban, Users, BookOpen, Workflow, Search
+  Kanban, Users, BookOpen, Workflow, Search, Package, Layers
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -20,8 +20,10 @@ export default function Layout({ children }) {
   ];
 
   const toolsSection = [
+    { path: '/produtos', icon: Package, label: 'Catálogo de Produtos' },
+    { path: '/biblioteca', icon: Layers, label: 'Biblioteca de Blocos' },
     { path: '/clientes', icon: Users, label: 'Clientes & Empresas' },
-    { path: '/templates', icon: BookOpen, label: 'Biblioteca & Templates', badge: 'Business' },
+    { path: '/templates', icon: BookOpen, label: 'Modelos Prontos', badge: 'Business' },
     { path: '/automacoes', icon: Workflow, label: 'Automações & Réguas' },
     { path: '/chat-ia', icon: MessageSquare, label: 'Assistente de Vendas IA', badge: 'IA' },
   ];

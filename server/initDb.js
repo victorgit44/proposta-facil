@@ -112,6 +112,63 @@ export async function initDb() {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
 
+      // 6. Tabela produtos (Catálogo Proposify)
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS produtos (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT NOT NULL,
+          nome VARCHAR(255) NOT NULL,
+          categoria VARCHAR(100) DEFAULT 'Geral',
+          descricao TEXT,
+          preco_unitario DECIMAL(10, 2) DEFAULT 0.00,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          INDEX (user_id),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+
+      // 7. Tabela biblioteca_blocos (Content Library Proposify)
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS biblioteca_blocos (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT NOT NULL,
+          titulo VARCHAR(255) NOT NULL,
+          categoria VARCHAR(100) DEFAULT 'servicos',
+          conteudo TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          INDEX (user_id),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+
+      // 8. Tabela proposta_eventos (Tracking de Eventos Comercial)
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS proposta_eventos (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          proposta_id INT NOT NULL,
+          tipo VARCHAR(50) NOT NULL,
+          descricao TEXT,
+          ip_origem VARCHAR(100),
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          INDEX (proposta_id),
+          FOREIGN KEY (proposta_id) REFERENCES propostas(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+
+      // 9. Tabela proposta_comentarios (Chat & Negociação Comercial)
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS proposta_comentarios (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          proposta_id INT NOT NULL,
+          autor VARCHAR(255) NOT NULL,
+          is_cliente BOOLEAN DEFAULT FALSE,
+          mensagem TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          INDEX (proposta_id),
+          FOREIGN KEY (proposta_id) REFERENCES propostas(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+
       console.log('✅ Estrutura de tabelas criada/verificada com sucesso no MariaDB!');
     } finally {
       connection.release();

@@ -33,6 +33,8 @@ import CRM from './pages/CRM';
 import Clientes from './pages/Clientes';
 import Templates from './pages/Templates';
 import Automacoes from './pages/Automacoes';
+import Produtos from './pages/Produtos';
+import BibliotecaConteudo from './pages/BibliotecaConteudo';
 // O BLOCO DE TESTE FOI MOVIDO DAQUI...
 
 // const queryClient = new QueryClient({
@@ -310,6 +312,8 @@ function App() {
               <Route path="/clientes" element={<Clientes />} />
               <Route path="/templates" element={<Templates />} />
               <Route path="/automacoes" element={<Automacoes />} />
+              <Route path="/produtos" element={<Produtos />} />
+              <Route path="/biblioteca" element={<BibliotecaConteudo />} />
               <Route path="/planos" element={<Planos />} />
               <Route path="/chat-ia" element={<ChatIA />} />
               <Route path="/propostas" element={<Propostas />} />
