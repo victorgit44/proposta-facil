@@ -416,7 +416,7 @@ app.post('/api/ai/chat', authenticateToken, async (req, res) => {
 app.get('/api/propostas/public/:id', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, user_id, numero_proposta, nome_cliente, email_cliente, telefone_cliente, empresa_cliente, servico_prestado, prazo_entrega, observacoes, status, validade, itens, valor_total, aceite_nome, aceite_ip, aceite_data, created_date FROM propostas WHERE id = ?',
+      'SELECT * FROM propostas WHERE id = ?',
       [req.params.id]
     );
 
@@ -426,12 +426,17 @@ app.get('/api/propostas/public/:id', async (req, res) => {
     proposta.itens = typeof proposta.itens === 'string' ? JSON.parse(proposta.itens || '[]') : (proposta.itens || []);
 
     // Buscar dados públicos da empresa remetente para exibir a logomarca e informações comerciais
-    const [configRows] = await pool.query(
-      'SELECT nome_empresa, cnpj, telefone, email, logo_url FROM configuracoes WHERE user_id = ?',
-      [proposta.user_id]
-    );
+    let empresa = {};
+    if (proposta.user_id) {
+      try {
+        const [configRows] = await pool.query(
+          'SELECT nome_empresa, cnpj, telefone, email, logo_url FROM configuracoes WHERE user_id = ?',
+          [proposta.user_id]
+        );
+        empresa = configRows[0] || {};
+      } catch (e) {}
+    }
 
-    const empresa = configRows[0] || {};
     delete proposta.user_id; // Remove user_id da resposta pública por segurança
 
     return res.json({
@@ -462,6 +467,11 @@ app.post('/api/propostas/public/:id/accept', async (req, res) => {
 
     const clientIp = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
     const now = new Date();
+
+    // Garante que as colunas existam no banco de dados
+    try { await pool.query('ALTER TABLE propostas ADD COLUMN aceite_nome VARCHAR(255) NULL'); } catch (e) {}
+    try { await pool.query('ALTER TABLE propostas ADD COLUMN aceite_ip VARCHAR(100) NULL'); } catch (e) {}
+    try { await pool.query('ALTER TABLE propostas ADD COLUMN aceite_data DATETIME NULL'); } catch (e) {}
 
     await pool.query(
       'UPDATE propostas SET status = ?, aceite_nome = ?, aceite_ip = ?, aceite_data = ? WHERE id = ?',
