@@ -1,15 +1,15 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Save, Plus, Trash2, Sparkles } from 'lucide-react' // <--- Adicionei Sparkles
-import { base44, supabase } from '@/api/supabaseClient' 
-import { queryClient } from '@/queryClient'
-import { toast } from 'sonner'
-import { AIChatModal } from '@/components/AIChatModal' // <--- 1. Importação do Modal
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Save, Plus, Trash2, Sparkles, FileText, DollarSign, Calendar, User, ShieldCheck } from 'lucide-react';
+import { base44, supabase } from '@/api/supabaseClient';
+import { queryClient } from '@/queryClient';
+import { toast } from 'sonner';
+import { AIChatModal } from '@/components/AIChatModal';
 
 export default function CriarProposta() {
-  const navigate = useNavigate()
-  const [saving, setSaving] = useState(false)
-  const [isAIModalOpen, setIsAIModalOpen] = useState(false) // <--- 2. Estado do Modal
+  const navigate = useNavigate();
+  const [saving, setSaving] = useState(false);
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     numero_proposta: `PROP-${Date.now().toString().slice(-6)}`,
@@ -24,51 +24,53 @@ export default function CriarProposta() {
     validade: '',
     itens: [{ descricao: '', quantidade: 1, valor_unitario: 0, valor_total: 0 }],
     valor_total: 0
-  })
+  });
 
-  // --- 3. Função para processar dados da IA ---
   const handleAIFill = (aiData) => {
     setFormData(prev => ({
       ...prev,
       ...aiData,
-      // Recalcula o total se a IA tiver mandado itens
       valor_total: aiData.itens 
         ? aiData.itens.reduce((sum, i) => sum + (i.quantidade * i.valor_unitario), 0)
         : prev.valor_total
-    }))
-  }
+    }));
+    toast.success("Dados preenchidos com IA com sucesso!");
+  };
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
   const handleItemChange = (index, field, value) => {
-    const newItens = [...formData.itens]
-    newItens[index][field] = field === 'descricao' ? value : parseFloat(value) || 0
+    const newItens = [...formData.itens];
+    newItens[index][field] = field === 'descricao' ? value : parseFloat(value) || 0;
     
     if (field === 'quantidade' || field === 'valor_unitario') {
-      newItens[index].valor_total = (newItens[index].quantidade || 0) * (newItens[index].valor_unitario || 0)
+      newItens[index].valor_total = (newItens[index].quantidade || 0) * (newItens[index].valor_unitario || 0);
     }
     
-    const valorTotalGlobal = newItens.reduce((sum, item) => sum + (item.valor_total || 0), 0)
-    setFormData(prev => ({ ...prev, itens: newItens, valor_total: valorTotalGlobal }))
-  }
+    const valorTotalGlobal = newItens.reduce((sum, item) => sum + (item.valor_total || 0), 0);
+    setFormData(prev => ({ ...prev, itens: newItens, valor_total: valorTotalGlobal }));
+  };
 
   const addItem = () => {
-    setFormData(prev => ({ ...prev, itens: [...prev.itens, { descricao: '', quantidade: 1, valor_unitario: 0, valor_total: 0 }] }))
-  }
+    setFormData(prev => ({
+      ...prev,
+      itens: [...prev.itens, { descricao: '', quantidade: 1, valor_unitario: 0, valor_total: 0 }]
+    }));
+  };
 
   const removeItem = (index) => {
-    if (formData.itens.length === 1) return
-    const newItens = formData.itens.filter((_, i) => i !== index)
-    const valorTotalGlobal = newItens.reduce((sum, item) => sum + (item.valor_total || 0), 0)
-    setFormData(prev => ({ ...prev, itens: newItens, valor_total: valorTotalGlobal }))
-  }
+    if (formData.itens.length === 1) return;
+    const newItens = formData.itens.filter((_, i) => i !== index);
+    const valorTotalGlobal = newItens.reduce((sum, item) => sum + (item.valor_total || 0), 0);
+    setFormData(prev => ({ ...prev, itens: newItens, valor_total: valorTotalGlobal }));
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setSaving(true)
-    const toastId = toast.loading('Criando proposta...')
+    e.preventDefault();
+    setSaving(true);
+    const toastId = toast.loading('Gerando proposta comercial...');
 
     try {
       const valorTotal = formData.valor_total || 0;
@@ -76,187 +78,298 @@ export default function CriarProposta() {
       await base44.entities.Proposta.create({
         ...formData,
         valor_total: valorTotal
-      })
+      });
       
       const { error: rpcError } = await supabase.rpc('increment_usage', { item_type: 'proposta' });
-      
       if (rpcError) {
-          console.error('Erro CRÍTICO ao incrementar uso:', rpcError);
-          // Opcional: throw new Error se quiser bloquear em caso de falha no contador
+        console.error('Erro ao incrementar contador:', rpcError);
       }
 
       queryClient.invalidateQueries({ queryKey: ['assinatura'] });
       queryClient.invalidateQueries({ queryKey: ['propostas'] });
       
-      toast.success('Proposta criada com sucesso!', { id: toastId })
-      navigate('/propostas')
+      toast.success('Proposta criada com sucesso!', { id: toastId });
+      navigate('/propostas');
 
     } catch (error) {
-      console.error("Erro:", error)
-      toast.error('Erro ao criar proposta: ' + (error.message || 'Erro desconhecido'), { id: toastId })
+      console.error("Erro:", error);
+      toast.error('Erro ao criar proposta: ' + (error.message || 'Erro desconhecido'), { id: toastId });
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 md:p-8">
-      <div className="max-w-5xl mx-auto">
-        
-        {/* Header Modificado com Botão IA */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/propostas')} className="p-2 hover:bg-slate-800 rounded-lg transition text-slate-400 hover:text-white">
-              <ArrowLeft className="w-6 h-6" />
-            </button>
-            <div>
-              <h1 className="text-3xl font-bold text-white">Nova Proposta</h1>
-              <p className="text-slate-400">Preencha os dados da proposta comercial</p>
-            </div>
-          </div>
-
-          {/* --- 4. Botão Mágico --- */}
+    <div className="p-6 md:p-10 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-300">
+      {/* Header Bar */}
+      <div className="flex items-center justify-between pb-6 border-b border-slate-800/80">
+        <div className="flex items-center gap-4">
           <button
-            type="button"
-            onClick={() => setIsAIModalOpen(true)}
-            className="hidden md:flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all shadow-purple-500/20"
+            onClick={() => navigate('/propostas')}
+            className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white transition"
           >
-            <Sparkles className="w-4 h-4" />
-            Preencher com IA
+            <ArrowLeft className="w-5 h-5" />
           </button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Nova Proposta Comercial</h1>
+            <p className="text-xs sm:text-sm text-slate-400 mt-0.5">Preencha os dados abaixo para emitir a proposta</p>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          
-          {/* Informações do Cliente */}
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-white mb-6">📋 Informações do Cliente</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Número da Proposta *</label>
-                <input type="text" required value={formData.numero_proposta} onChange={(e) => handleChange('numero_proposta', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Status</label>
-                <select value={formData.status} onChange={(e) => handleChange('status', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
-                  <option value="rascunho">Rascunho</option>
-                  <option value="enviada">Enviada</option>
-                  <option value="aprovada">Aprovada</option>
-                  <option value="recusada">Recusada</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Nome do Cliente *</label>
-                <input type="text" required value={formData.nome_cliente} onChange={(e) => handleChange('nome_cliente', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
-                <input type="email" value={formData.email_cliente} onChange={(e) => handleChange('email_cliente', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Telefone</label>
-                <input type="tel" value={formData.telefone_cliente} onChange={(e) => handleChange('telefone_cliente', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Empresa</label>
-                <input type="text" value={formData.empresa_cliente} onChange={(e) => handleChange('empresa_cliente', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" />
-              </div>
-            </div>
-          </div>
-
-          {/* Detalhes do Serviço */}
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-white mb-6">📝 Detalhes do Serviço</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Serviço Prestado *</label>
-                <textarea required value={formData.servico_prestado} onChange={(e) => handleChange('servico_prestado', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white h-32 focus:outline-none focus:border-blue-500" placeholder="Descreva o serviço a ser prestado..." />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Prazo de Entrega</label>
-                  <input type="text" value={formData.prazo_entrega} onChange={(e) => handleChange('prazo_entrega', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" placeholder="Ex: 30 dias" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Validade da Proposta</label>
-                  <input type="date" value={formData.validade} onChange={(e) => handleChange('validade', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Observações</label>
-                <textarea value={formData.observacoes} onChange={(e) => handleChange('observacoes', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white h-24 focus:outline-none focus:border-blue-500" placeholder="Informações adicionais..." />
-              </div>
-            </div>
-          </div>
-
-          {/* Itens da Proposta */}
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-white">💰 Itens da Proposta</h2>
-              <button type="button" onClick={addItem} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                <Plus className="w-4 h-4" />
-                Adicionar Item
-              </button>
-            </div>
-            <div className="space-y-4">
-              {formData.itens.map((item, index) => (
-                <div key={index} className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                    <div className="md:col-span-5">
-                      <label className="block text-sm font-medium text-slate-300 mb-2">Descrição</label>
-                      <input type="text" value={item.descricao} onChange={(e) => handleItemChange(index, 'descricao', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500" placeholder="Descrição do item" />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-slate-300 mb-2">Quantidade</label>
-                      <input type="number" min="1" value={item.quantidade} onChange={(e) => handleItemChange(index, 'quantidade', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-slate-300 mb-2">Valor Unit.</label>
-                      <input type="number" min="0" step="0.01" value={item.valor_unitario} onChange={(e) => handleItemChange(index, 'valor_unitario', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500" />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-slate-300 mb-2">Total</label>
-                      <div className="px-3 py-2 bg-slate-700 rounded-lg text-blue-400 font-bold">
-                        R$ {(item.valor_total || 0).toFixed(2)}
-                      </div>
-                    </div>
-                    <div className="md:col-span-1">
-                      <button type="button" onClick={() => removeItem(index)} disabled={formData.itens.length === 1} className="p-2 text-red-400 hover:bg-red-900/20 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Total */}
-            <div className="mt-6 pt-6 border-t border-slate-700 flex justify-between items-center">
-              <span className="text-xl font-semibold text-slate-300">Valor Total</span>
-              <span className="text-3xl font-bold text-blue-400">
-                R$ {(formData.valor_total || 0).toFixed(2)}
-              </span>
-            </div>
-          </div>
-
-          {/* Botões */}
-          <div className="flex justify-end gap-4">
-            <button type="button" onClick={() => navigate('/propostas')} className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition">Cancelar</button>
-            <button type="submit" disabled={saving} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg transition disabled:opacity-50">
-              <Save className="w-5 h-5" />
-              {saving ? 'Salvando...' : 'Salvar Proposta'}
-            </button>
-          </div>
-        </form>
+        <button
+          type="button"
+          onClick={() => setIsAIModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 transition shadow-lg shadow-indigo-600/20 cursor-pointer"
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>Preencher com IA</span>
+        </button>
       </div>
 
-      {/* --- 5. Componente Modal --- */}
-      <AIChatModal 
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Step 1: Cliente */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/80 border border-slate-800/90 backdrop-blur-xl space-y-6">
+          <div className="flex items-center gap-3 border-b border-slate-800/80 pb-4">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-sm">1</div>
+            <h2 className="text-base font-bold text-white tracking-tight">Informações do Cliente & Proposta</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Número da Proposta *</label>
+              <input
+                type="text"
+                required
+                value={formData.numero_proposta}
+                onChange={(e) => handleChange('numero_proposta', e.target.value)}
+                className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Status Inicial</label>
+              <select
+                value={formData.status}
+                onChange={(e) => handleChange('status', e.target.value)}
+                className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              >
+                <option value="rascunho">Rascunho</option>
+                <option value="enviada">Enviada</option>
+                <option value="aprovada">Aprovada</option>
+                <option value="recusada">Recusada</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Nome do Cliente *</label>
+              <input
+                type="text"
+                required
+                value={formData.nome_cliente}
+                onChange={(e) => handleChange('nome_cliente', e.target.value)}
+                placeholder="Ex: João Silva"
+                className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">E-mail do Cliente</label>
+              <input
+                type="email"
+                value={formData.email_cliente}
+                onChange={(e) => handleChange('email_cliente', e.target.value)}
+                placeholder="cliente@empresa.com"
+                className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Telefone / WhatsApp</label>
+              <input
+                type="tel"
+                value={formData.telefone_cliente}
+                onChange={(e) => handleChange('telefone_cliente', e.target.value)}
+                placeholder="(11) 99999-9999"
+                className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Empresa do Cliente</label>
+              <input
+                type="text"
+                value={formData.empresa_cliente}
+                onChange={(e) => handleChange('empresa_cliente', e.target.value)}
+                placeholder="Ex: Tech Corp Ltda"
+                className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Step 2: Escopo */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/80 border border-slate-800/90 backdrop-blur-xl space-y-6">
+          <div className="flex items-center gap-3 border-b border-slate-800/80 pb-4">
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-sm">2</div>
+            <h2 className="text-base font-bold text-white tracking-tight">Escopo do Serviço & Prazos</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Serviço Prestado / Descrição *</label>
+              <textarea
+                required
+                value={formData.servico_prestado}
+                onChange={(e) => handleChange('servico_prestado', e.target.value)}
+                rows={4}
+                placeholder="Descreva em detalhes a solução comercial oferecida..."
+                className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Prazo de Entrega</label>
+                <input
+                  type="text"
+                  value={formData.prazo_entrega}
+                  onChange={(e) => handleChange('prazo_entrega', e.target.value)}
+                  placeholder="Ex: 30 dias úteis"
+                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Validade da Proposta</label>
+                <input
+                  type="date"
+                  value={formData.validade}
+                  onChange={(e) => handleChange('validade', e.target.value)}
+                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Observações / Condições Gerais</label>
+              <textarea
+                value={formData.observacoes}
+                onChange={(e) => handleChange('observacoes', e.target.value)}
+                rows={3}
+                placeholder="Informações sobre pagamento, garantias ou etapas..."
+                className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Step 3: Valoração & Itens */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/80 border border-slate-800/90 backdrop-blur-xl space-y-6">
+          <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-sm">3</div>
+              <h2 className="text-base font-bold text-white tracking-tight">Itens & Valores Comerciais</h2>
+            </div>
+            <button
+              type="button"
+              onClick={addItem}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Adicionar Item</span>
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {formData.itens.map((item, index) => (
+              <div key={index} className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80 flex flex-col md:flex-row items-center gap-4">
+                <div className="w-full md:flex-1">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Descrição do Item</label>
+                  <input
+                    type="text"
+                    value={item.descricao}
+                    onChange={(e) => handleItemChange(index, 'descricao', e.target.value)}
+                    placeholder="Ex: Desenvolvimento de Landing Page"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  />
+                </div>
+
+                <div className="w-full md:w-28">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Qtd</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={item.quantidade}
+                    onChange={(e) => handleItemChange(index, 'quantidade', e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  />
+                </div>
+
+                <div className="w-full md:w-36">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Valor Unit. (R$)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={item.valor_unitario}
+                    onChange={(e) => handleItemChange(index, 'valor_unitario', e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  />
+                </div>
+
+                <div className="w-full md:w-36">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Total Item</label>
+                  <div className="px-3 py-2 bg-slate-900 border border-slate-800/80 rounded-xl text-xs font-extrabold text-emerald-400">
+                    R$ {(item.valor_total || 0).toFixed(2)}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => removeItem(index)}
+                  disabled={formData.itens.length === 1}
+                  className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition disabled:opacity-30 cursor-pointer self-end md:self-center"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Valor Total Calculado</span>
+            <span className="text-2xl font-black text-emerald-400 tracking-tight">
+              R$ {(formData.valor_total || 0).toFixed(2)}
+            </span>
+          </div>
+        </div>
+
+        {/* Buttons */}
+        <div className="flex items-center justify-end gap-3 pt-4">
+          <button
+            type="button"
+            onClick={() => navigate('/propostas')}
+            className="px-6 py-3 rounded-xl font-bold text-xs text-slate-400 hover:text-white bg-slate-900 border border-slate-800 transition"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="px-8 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 transition duration-200 shadow-lg shadow-blue-600/20 flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+          >
+            <Save className="w-4 h-4" />
+            <span>{saving ? 'Gerando Proposta...' : 'Salvar e Emitir Proposta'}</span>
+          </button>
+        </div>
+      </form>
+
+      <AIChatModal
         isOpen={isAIModalOpen}
         onClose={() => setIsAIModalOpen(false)}
         onFill={handleAIFill}
         type="proposta"
       />
     </div>
-  )
+  );
 }

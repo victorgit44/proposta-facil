@@ -1,23 +1,43 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import { Eye, Edit2, Trash2, Briefcase } from 'lucide-react'
-import { formatCurrency, formatDate } from '../utils/formatters' // Certifique-se que o caminho está correto
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Eye, Edit2, Trash2, FileSignature, Calendar, ShieldCheck } from 'lucide-react';
+import { formatCurrency, formatDate } from '../utils/formatters';
 
-// Helper para o "chip" de status (similar ao de propostas)
-const getStatusChip = (status) => {
-  switch (status) {
+const getStatusBadge = (status) => {
+  switch (status?.toLowerCase()) {
     case 'assinado':
-      return 'bg-green-500/20 text-green-400 border border-green-500/30'
+      return {
+        label: 'Assinado',
+        bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+        dot: 'bg-emerald-400'
+      };
     case 'enviado':
-      return 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+      return {
+        label: 'Em Assinatura',
+        bg: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+        dot: 'bg-blue-400'
+      };
     case 'rascunho':
-      return 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+      return {
+        label: 'Minuta',
+        bg: 'bg-slate-500/10 text-slate-400 border-slate-500/30',
+        dot: 'bg-slate-400'
+      };
     case 'rejeitado':
-      return 'bg-red-500/20 text-red-400 border border-red-500/30'
+    case 'cancelado':
+      return {
+        label: 'Cancelado',
+        bg: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
+        dot: 'bg-rose-400'
+      };
     default:
-      return 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+      return {
+        label: status || 'Pendente',
+        bg: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
+        dot: 'bg-indigo-400'
+      };
   }
-}
+};
 
 export function ContractCard({ contrato, onExcluir }) {
   const {
@@ -29,65 +49,87 @@ export function ContractCard({ contrato, onExcluir }) {
     valor_contrato,
     data_assinatura,
     created_date,
-  } = contrato
+  } = contrato;
 
-  // Usa a data de assinatura se existir, senão, a de criação
-  const dataFormatada = formatDate(data_assinatura || created_date)
+  const dataFormatada = formatDate(data_assinatura || created_date);
+  const badge = getStatusBadge(status);
 
   return (
-    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 shadow-lg relative overflow-hidden">
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between">
-        {/* Lado Esquerdo: Infos */}
-        <div className="flex-1 mb-4 md:mb-0">
-          <div className="flex items-center gap-4 mb-3">
-            <div className="bg-purple-600 w-12 h-12 p-3 rounded-lg flex-shrink-0 flex items-center justify-center">
-              <Briefcase className="text-white" size={24} />
+    <div className="group rounded-2xl bg-slate-900/90 border border-slate-800/80 p-5 backdrop-blur-xl shadow-lg hover:border-slate-700/90 hover:shadow-2xl transition duration-300 relative overflow-hidden flex flex-col justify-between">
+      {/* Header Info */}
+      <div>
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white font-extrabold text-base shadow-md shadow-purple-600/20 shrink-0">
+              <FileSignature className="w-5 h-5 text-purple-200" />
             </div>
-            <div>
-              <h3 className="text-xl font-bold text-white">{contratante_nome || 'Nome do Contratante'}</h3>
-              <p className="text-sm text-slate-400 line-clamp-1">{objeto_contrato || 'Objeto do contrato'}</p>
+            <div className="min-w-0">
+              <h3 className="text-base font-bold text-white tracking-tight truncate group-hover:text-purple-400 transition-colors">
+                {contratante_nome || 'Contratante não especificado'}
+              </h3>
+              <p className="text-xs text-slate-400 truncate max-w-[220px] sm:max-w-xs">
+                {objeto_contrato || 'Contrato de prestação de serviços'}
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-sm text-slate-400 mt-4">
-            <span>Nº {numero_contrato || 'CONTR-001'}</span>
-            <span>•</span>
-            <span>{dataFormatada}</span>
-          </div>
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${badge.bg}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
+            {badge.label}
+          </span>
         </div>
 
-        {/* Lado Direito: Valor e Botões */}
-        <div className="flex flex-col items-start md:items-end w-full md:w-auto">
-          <div className="absolute top-4 right-4">
-            <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusChip(status)}`}>
-              {status || 'Status'}
-            </span>
-          </div>
+        {/* Details row */}
+        <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400 my-3 pt-3 border-t border-slate-800/60">
+          <span className="font-semibold text-slate-300">Nº {numero_contrato || 'CONTR-001'}</span>
+          <span>•</span>
+          <span className="flex items-center gap-1">
+            <Calendar className="w-3 h-3 text-slate-500" />
+            {dataFormatada}
+          </span>
+          <span>•</span>
+          <span className="flex items-center gap-1 text-emerald-400/90 font-medium">
+            <ShieldCheck className="w-3 h-3" />
+            Validade Jurídica
+          </span>
+        </div>
+      </div>
 
-          <div className="text-3xl font-bold text-white mt-8 md:mt-12 mb-4">
+      {/* Bottom row */}
+      <div className="pt-4 border-t border-slate-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
+        <div>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Valor do Contrato</span>
+          <span className="text-xl font-extrabold text-white tracking-tight">
             {formatCurrency(valor_contrato)}
-          </div>
+          </span>
+        </div>
 
-          <div className="flex items-center gap-3">
-            <Link to={`/contratos/ver/${id}`}>
-              <button className="flex items-center gap-2 text-sm text-slate-300 bg-slate-700/50 hover:bg-slate-700 px-4 py-2 rounded-lg transition">
-                <Eye size={16} /> Ver
-              </button>
-            </Link>
-            <Link to={`/contratos/editar/${id}`}>
-              <button className="flex items-center gap-2 text-sm text-slate-300 bg-slate-700/50 hover:bg-slate-700 px-4 py-2 rounded-lg transition">
-                <Edit2 size={16} /> Editar
-              </button>
-            </Link>
-            <button
-              onClick={() => onExcluir(id)}
-              className="flex items-center gap-2 text-sm text-red-400 bg-red-900/30 hover:bg-red-900/60 px-4 py-2 rounded-lg transition"
-            >
-              <Trash2 size={16} /> Excluir
-            </button>
-          </div>
+        <div className="flex items-center gap-2">
+          <Link
+            to={`/contratos/ver/${id}`}
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-200 bg-slate-800 hover:bg-purple-600 hover:text-white px-3 py-2 rounded-xl transition duration-200"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>Ver</span>
+          </Link>
+
+          <Link
+            to={`/contratos/editar/${id}`}
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-300 bg-slate-800/80 hover:bg-slate-700 hover:text-white px-3 py-2 rounded-xl transition duration-200"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+            <span>Editar</span>
+          </Link>
+
+          <button
+            onClick={() => onExcluir(id)}
+            className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition duration-200 cursor-pointer"
+            title="Excluir contrato"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
     </div>
-  )
+  );
 }

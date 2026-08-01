@@ -1,54 +1,38 @@
-import React, { useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import { useQuery, useMutation } from '@tanstack/react-query'
-import { base44, supabase } from '@/api/supabaseClient' // Importar supabase (para o RPC no futuro, se necessário)
-import { queryClient } from '@/queryClient'
-import { ContractCard } from '../components/ContractCard' // Certifique-se que o caminho está correto
-import { Loader2, AlertCircle, FileSignature, Wallet, CheckSquare } from 'lucide-react'
-import { StatCard } from '../components/StatCard'
-import { formatCurrency } from '../utils/formatters'
-import { useAuth } from '../context/AuthContext'; // <-- 1. Importar useAuth
-import { PLAN_LIMITS } from '@/config'; // <-- 2. Importar PLAN_LIMITS
+import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { base44 } from '@/api/supabaseClient';
+import { queryClient } from '@/queryClient';
+import { ContractCard } from '../components/ContractCard';
+import { 
+  Loader2, AlertCircle, FileSignature, Search, Plus, 
+  ShieldCheck, DollarSign, CheckCircle2 
+} from 'lucide-react';
+import { formatCurrency } from '../utils/formatters';
+import { useAuth } from '../context/AuthContext';
+import { PLAN_LIMITS } from '@/config';
 
-// Definição do plano padrão/fallback
 const defaultSubscription = {
   plano: 'Gratuito',
   contratos_criadas_mes: 0,
 };
-const defaultLimits = PLAN_LIMITS['Gratuito'];
 
-// Estado de "Nenhum contrato ainda"
-function EmptyState() {
-  return (
-    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 text-center mt-8">
-      <FileSignature size={48} className="mx-auto text-slate-500 mb-4" />
-      <h3 className="text-2xl font-bold text-white mb-2">Nenhum contrato ainda</h3>
-      <p className="text-slate-400 mb-6">Comece criando seu primeiro contrato</p>
-      <Link to="/contratos/criar">
-        <button className="bg-purple-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-purple-700 transition">
-          Criar Primeiro Contrato
-        </button>
-      </Link>
-    </div>
-  )
-}
+export default function Contratos() {
+  const { user } = useAuth();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('todos');
 
-function Contratos() {
-  // --- 3. PEGAR O USUÁRIO DO CONTEXTO ---
-  const { user } = useAuth(); // 'loading' do auth já foi tratado pelo AuthProvider
-
-  // --- 4. BUSCAR CONTRATOS (habilitado PÓS login) ---
   const {
-    data: contratos,
+    data: contratosData,
     isLoading: loadingContratos,
     error: errorContratos,
   } = useQuery({
     queryKey: ['contratos'],
     queryFn: () => base44.entities.Contrato.list(),
-    enabled: !!user, // Só busca se o usuário estiver logado
-  })
+    enabled: !!user,
+  });
+  const contratos = contratosData || [];
 
-  // --- 5. BUSCAR ASSINATURA (habilitado PÓS login) ---
   const {
     data: assinaturaData,
     isLoading: loadingAssinatura,
@@ -56,16 +40,15 @@ function Contratos() {
   } = useQuery({
     queryKey: ['assinatura'],
     queryFn: async () => {
-      const data = await base44.entities.Assinatura.list(); 
+      const data = await base44.entities.Assinatura.list();
       return data[0] || defaultSubscription;
     },
-    enabled: !!user, // Só busca se o usuário estiver logado
+    enabled: !!user,
   });
   const assinatura = assinaturaData || defaultSubscription;
 
-  // 6. Calcular estatísticas
   const stats = useMemo(() => {
-    if (!contratos) return { total: 0, valor: 'R$ 0,00', taxa: '0%' }
+    if (!contratos) return { total: 0, valor: 'R$ 0,00', taxa: '0%' };
     
     const totalContratos = contratos.length;
     const assinados = contratos.filter(c => c.status === 'assinado');
@@ -78,135 +61,192 @@ function Contratos() {
       subtext: `${totalAssinados} assinados`,
       valor: formatCurrency(valorTotal),
       taxa: `${taxaAssinatura.toFixed(0)}%`,
-    }
-  }, [contratos])
+    };
+  }, [contratos]);
 
-  // 7. Mutação para excluir
+  const filteredContratos = useMemo(() => {
+    return contratos.filter((c) => {
+      const matchesSearch = 
+        c.contratante_nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.objeto_contrato?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.numero_contrato?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'todos' || (c.status?.toLowerCase() === statusFilter);
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [contratos, searchTerm, statusFilter]);
+
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Contrato.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contratos'] })
-      queryClient.invalidateQueries({ queryKey: ['assinatura'] }) // Invalida assinatura
+      queryClient.invalidateQueries({ queryKey: ['contratos'] });
+      queryClient.invalidateQueries({ queryKey: ['assinatura'] });
     },
-    onError: (err) => {
-      alert(`Erro ao excluir: ${err.message}`)
-    },
-  })
+    onError: (err) => alert(`Erro ao excluir: ${err.message}`),
+  });
 
   const handleExcluir = (id) => {
     if (window.confirm('Tem certeza que deseja excluir este contrato?')) {
-      deleteMutation.mutate(id)
+      deleteMutation.mutate(id);
     }
-  }
+  };
 
-  // Combina os estados de loading
   const isLoading = loadingContratos || loadingAssinatura;
   const error = errorContratos || errorAssinatura;
 
-  // --- 8. VERIFIQUE O LIMITE ---
-  const limits = PLAN_LIMITS[assinatura.plano] || defaultLimits;
+  const limits = PLAN_LIMITS[assinatura.plano] || PLAN_LIMITS['Gratuito'];
   const isLimitReached = (assinatura.contratos_criadas_mes ?? 0) >= (limits.contratos ?? 0);
 
-  // 9. Renderizar estados
-  const renderContent = () => {
-    if (isLoading) {
-      return (
-        <div className="flex justify-center items-center h-64">
-          <Loader2 size={48} className="text-purple-500 animate-spin" />
-        </div>
-      )
-    }
-
-    if (error) {
-      return (
-        <div className="flex justify-center items-center h-64 text-red-400 p-4 text-center">
-          <AlertCircle size={48} className="mr-4" />
-          <p>Erro ao carregar contratos: {error.message}</p>
-        </div>
-      )
-    }
-
-    if (!contratos || contratos.length === 0) {
-      return <EmptyState />
-    }
-
-    return (
-      <div className="space-y-6 mt-8">
-        {contratos.map((contrato) => (
-          <ContractCard
-            key={contrato.id}
-            contrato={contrato}
-            onExcluir={handleExcluir}
-          />
-        ))}
-      </div>
-    )
-  }
-
   return (
-    <div className="p-4 md:p-8 text-white">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2">📝 Meus Contratos</h1>
-            <p className="text-slate-400">Gerencie seus contratos de prestação de serviços</p>
-          </div>
-          
-          {/* --- 10. APLIQUE O BLOQUEIO --- */}
-          <Link 
-            to="/contratos/criar" 
-            className={isLimitReached ? 'pointer-events-none' : ''}
+    <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
+            <FileSignature className="w-8 h-8 text-purple-400" />
+            <span>Gestão de Contratos</span>
+          </h1>
+          <p className="text-sm text-slate-400 mt-1">
+            Formalize parcerias comerciais com contratos jurídicos padronizados.
+          </p>
+        </div>
+
+        <Link
+          to="/contratos/criar"
+          className={isLimitReached ? 'pointer-events-none' : ''}
+        >
+          <button
+            disabled={isLimitReached || isLoading}
+            className="px-5 py-3 rounded-xl font-bold text-sm text-white bg-purple-600 hover:bg-purple-500 transition duration-200 shadow-lg shadow-purple-600/20 flex items-center gap-2 disabled:opacity-50 cursor-pointer"
           >
-            <button 
-              disabled={isLimitReached || isLoading}
-              title={isLimitReached ? "Limite de contratos atingido" : "Criar novo contrato"}
-              className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-purple-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              + Novo Contrato
-            </button>
+            <Plus className="w-4 h-4" />
+            <span>Novo Contrato</span>
+          </button>
+        </Link>
+      </div>
+
+      {/* Warning for limit */}
+      {isLimitReached && (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-sm flex items-center justify-between gap-4">
+          <span>Você atingiu o limite de {limits.contratos} contratos do seu plano atual.</span>
+          <Link to="/planos" className="font-bold underline text-amber-400 hover:text-white shrink-0">
+            Fazer Upgrade ⚡
           </Link>
         </div>
+      )}
 
-        {/* Aviso de Limite Atingido */}
-        {isLimitReached && (
-            <div className="mb-6 p-4 bg-yellow-900/30 border border-yellow-500/50 text-yellow-300 rounded-lg text-sm">
-                Você atingiu o limite de {limits.contratos} contratos do seu plano. 
-                <Link to="/planos" className="font-bold underline hover:text-yellow-200 ml-1">Faça um upgrade</Link> para criar mais.
-            </div>
-        )}
+      {/* KPI Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl flex items-center justify-between">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Total de Contratos</span>
+            <span className="text-2xl font-black text-white">{stats.total}</span>
+            <span className="text-xs text-slate-400 block mt-1">{stats.subtext}</span>
+          </div>
+          <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400">
+            <FileSignature className="w-5 h-5" />
+          </div>
+        </div>
 
-        {/* StatCards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <StatCard
-            title="Total de Contratos"
-            icon={FileSignature}
-            value={stats.total}
-            subtext={stats.subtext}
-            colorClass="text-purple-400"
-          />
-          <StatCard
-            title="Valor Assinado"
-            icon={Wallet}
-            value={stats.valor}
-            subtext="Em contratos assinados"
-            colorClass="text-green-400"
-          />
-          <StatCard
-            title="Taxa de Assinatura"
-            icon={CheckSquare}
-            value={stats.taxa}
-            subtext="Contratos assinados"
-            colorClass="text-blue-400"
+        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl flex items-center justify-between">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Valor Formalizado</span>
+            <span className="text-2xl font-black text-emerald-400">{stats.valor}</span>
+            <span className="text-xs text-slate-400 block mt-1">Em contratos assinados</span>
+          </div>
+          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
+            <DollarSign className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl flex items-center justify-between">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Taxa de Assinatura</span>
+            <span className="text-2xl font-black text-blue-400">{stats.taxa}</span>
+            <span className="text-xs text-slate-400 block mt-1">Contratos vigentes</span>
+          </div>
+          <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+        </div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80">
+        <div className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar por contratante, objeto ou Nº..."
+            className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
           />
         </div>
 
-        {/* Lista de Contratos */}
-        <h2 className="text-2xl font-bold text-white mb-6">Lista de Contratos</h2>
-        {renderContent()}
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto">
+          {[
+            { id: 'todos', label: 'Todos' },
+            { id: 'assinado', label: 'Assinados' },
+            { id: 'enviado', label: 'Em Assinatura' },
+            { id: 'rascunho', label: 'Minutas' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setStatusFilter(tab.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition whitespace-nowrap cursor-pointer ${
+                statusFilter === tab.id
+                  ? 'bg-purple-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
-  )
-}
 
-export default Contratos
+      {/* Listing Content */}
+      {isLoading ? (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="w-10 h-10 text-purple-500 animate-spin" />
+        </div>
+      ) : error ? (
+        <div className="p-8 rounded-2xl bg-red-500/10 border border-red-500/30 text-center text-red-400">
+          <AlertCircle className="w-10 h-10 mx-auto mb-2" />
+          <p>{error.message}</p>
+        </div>
+      ) : filteredContratos.length === 0 ? (
+        <div className="p-12 rounded-3xl bg-slate-900/60 border border-slate-800 text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-slate-800 flex items-center justify-center mx-auto text-slate-500">
+            <FileSignature className="w-7 h-7" />
+          </div>
+          <h3 className="text-lg font-bold text-white">Nenhum contrato encontrado</h3>
+          <p className="text-xs text-slate-400 max-w-md mx-auto">
+            {searchTerm || statusFilter !== 'todos'
+              ? 'Nenhum resultado atende aos filtros de busca.'
+              : 'Gere contratos jurídicos personalizados em poucos cliques.'}
+          </p>
+          <Link
+            to="/contratos/criar"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs text-white bg-purple-600 hover:bg-purple-500 transition shadow-lg shadow-purple-600/20"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Criar Primeiro Contrato</span>
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredContratos.map((contrato) => (
+            <ContractCard
+              key={contrato.id}
+              contrato={contrato}
+              onExcluir={handleExcluir}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

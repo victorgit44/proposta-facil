@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react'
-import { Save, Upload, Loader2 } from 'lucide-react'
-import { base44, supabase } from '../api/supabaseClient'
-import { useAuth } from '../context/AuthContext'
-import { toast } from 'sonner' // <--- IMPORTANTE
+import React, { useState, useEffect } from 'react';
+import { Save, Upload, Loader2, Building, Image, FileText, CheckCircle2, Globe, Mail, Phone, MapPin } from 'lucide-react';
+import { base44, supabase } from '../api/supabaseClient';
+import { useAuth } from '../context/AuthContext';
+import { toast } from 'sonner';
 
 export default function Configuracoes() {
-  const { user } = useAuth()
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [logoFile, setLogoFile] = useState(null)
-  
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [logoFile, setLogoFile] = useState(null);
+  const [activeTab, setActiveTab] = useState('empresa');
+
   const [formData, setFormData] = useState({
     nome_empresa: '',
     cnpj: '',
@@ -21,202 +22,329 @@ export default function Configuracoes() {
     cor_primaria: '#2563eb',
     mensagem_rodape: '',
     termos_condicoes: ''
-  })
+  });
 
-  // Carrega configurações
   useEffect(() => {
     async function loadConfig() {
-      if (!user) return
+      if (!user) return;
       try {
-        const configs = await base44.entities.ConfiguracaoEmpresa.list()
+        const configs = await base44.entities.ConfiguracaoEmpresa.list();
         if (configs && configs.length > 0) {
-          setFormData(configs[0])
+          setFormData(configs[0]);
         }
       } catch (error) {
-        console.error('Erro ao carregar configs:', error)
-        toast.error('Erro ao carregar configurações.')
+        console.error('Erro ao carregar configs:', error);
+        toast.error('Erro ao carregar configurações.');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
-    loadConfig()
-  }, [user])
+    loadConfig();
+  }, [user]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      setLogoFile(e.target.files[0])
+      setLogoFile(e.target.files[0]);
     }
-  }
+  };
 
-  // Função para converter arquivo em Base64
   const fileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.readAsDataURL(file)
-      reader.onload = () => resolve(reader.result)
-      reader.onerror = error => reject(error)
-    })
-  }
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  };
 
   const handleSave = async (e) => {
-    e.preventDefault()
-    setSaving(true)
-    
-    // Inicia toast de carregamento
-    const toastId = toast.loading('Salvando configurações...')
+    e.preventDefault();
+    setSaving(true);
+    const toastId = toast.loading('Salvando configurações corporativas...');
 
     try {
-      let finalLogoUrl = formData.logo_url
+      let finalLogoUrl = formData.logo_url;
 
-      // 1. Upload do Logo (se houver novo arquivo)
       if (logoFile) {
-        toast.loading('Enviando logo...', { id: toastId }) // Atualiza mensagem
+        toast.loading('Enviando marca/logo...', { id: toastId });
+        const base64File = await fileToBase64(logoFile);
         
-        const base64File = await fileToBase64(logoFile)
-        
-        // Chama a Edge Function 'upload-logo'
         const { data, error } = await supabase.functions.invoke('upload-logo', {
           body: {
             image: base64File,
             filename: logoFile.name
           }
-        })
+        });
 
-        if (error) throw error
+        if (error) throw error;
         if (data?.url) {
-          finalLogoUrl = data.url
+          finalLogoUrl = data.url;
         }
       }
 
-      // 2. Salvar no Banco
-      const dadosParaSalvar = { ...formData, logo_url: finalLogoUrl }
-      
-      // Verifica se já existe config para atualizar ou criar
-      const configs = await base44.entities.ConfiguracaoEmpresa.list()
-      
+      const dadosParaSalvar = { ...formData, logo_url: finalLogoUrl };
+      const configs = await base44.entities.ConfiguracaoEmpresa.list();
+
       if (configs.length > 0) {
-        await base44.entities.ConfiguracaoEmpresa.update(configs[0].id, dadosParaSalvar)
+        await base44.entities.ConfiguracaoEmpresa.update(configs[0].id, dadosParaSalvar);
       } else {
-        await base44.entities.ConfiguracaoEmpresa.create(dadosParaSalvar)
+        await base44.entities.ConfiguracaoEmpresa.create(dadosParaSalvar);
       }
 
-      // Atualiza estado local
-      setFormData(dadosParaSalvar)
-      setLogoFile(null)
-      
-      // Sucesso!
-      toast.success('Configurações salvas com sucesso!', { id: toastId })
+      setFormData(dadosParaSalvar);
+      setLogoFile(null);
+      toast.success('Configurações salvas com sucesso!', { id: toastId });
 
     } catch (error) {
-      console.error('Erro ao salvar:', error)
-      toast.error('Erro ao salvar: ' + (error.message || 'Erro desconhecido'), { id: toastId })
+      console.error('Erro ao salvar:', error);
+      toast.error('Erro ao salvar: ' + (error.message || 'Erro desconhecido'), { id: toastId });
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   if (loading) {
-    return <div className="flex justify-center items-center h-screen"><Loader2 className="animate-spin text-blue-500" size={48} /></div>
+    return (
+      <div className="flex justify-center items-center h-[80vh]">
+        <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+      </div>
+    );
   }
 
   return (
-    <div className="p-4 md:p-8 text-white min-h-screen">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">⚙️ Configurações da Empresa</h1>
-        
-        <form onSubmit={handleSave} className="space-y-8">
-          
-          {/* Logo e Identidade */}
-          <section className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-            <h2 className="text-xl font-semibold mb-4 text-blue-400">Identidade Visual</h2>
-            <div className="flex flex-col md:flex-row gap-6 items-start">
-              <div className="flex-1 w-full">
-                <label className="block text-sm text-slate-400 mb-2">Logo da Empresa</label>
-                <div className="flex items-center gap-4">
-                  {/* Preview */}
-                  <div className="w-24 h-24 bg-slate-900 border border-slate-600 rounded-lg flex items-center justify-center overflow-hidden">
-                    {logoFile ? (
-                      <img src={URL.createObjectURL(logoFile)} alt="Preview" className="w-full h-full object-contain" />
-                    ) : formData.logo_url ? (
-                      <img src={formData.logo_url} alt="Logo Atual" className="w-full h-full object-contain" />
-                    ) : (
-                      <Upload className="text-slate-500" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <input 
-                      type="file" 
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
-                    />
-                    <p className="text-xs text-slate-500 mt-2">Recomendado: PNG ou JPG transparente.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
+    <div className="p-6 md:p-10 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-300">
+      {/* Header */}
+      <div className="pb-6 border-b border-slate-800/80">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          Configurações da Empresa
+        </h1>
+        <p className="text-sm text-slate-400 mt-1">
+          Personalize a marca, logotipo e termos contratuais exibidos em suas propostas.
+        </p>
+      </div>
 
-          {/* Dados da Empresa */}
-          <section className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-            <h2 className="text-xl font-semibold mb-4 text-blue-400">Dados da Empresa</h2>
+      {/* Form Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-800/80 pb-3">
+        {[
+          { id: 'empresa', label: 'Dados da Empresa', icon: Building },
+          { id: 'identidade', label: 'Logo & Marca', icon: Image },
+          { id: 'termos', label: 'Textos & Termos Padrão', icon: FileText },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                activeTab === tab.id
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <form onSubmit={handleSave} className="space-y-8">
+        {/* Tab 1: Dados da Empresa */}
+        {activeTab === 'empresa' && (
+          <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800/90 backdrop-blur-xl space-y-6">
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <Building className="w-4 h-4 text-blue-400" />
+              <span>Informações Cadastrais da Empresa</span>
+            </h2>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Nome da Empresa</label>
-                <input type="text" name="nome_empresa" value={formData.nome_empresa} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white" />
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Nome Fantasia / Razão Social
+                </label>
+                <input
+                  type="text"
+                  name="nome_empresa"
+                  value={formData.nome_empresa}
+                  onChange={handleChange}
+                  placeholder="Ex: ACME Soluções Digitais Ltda"
+                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                />
               </div>
+
               <div>
-                <label className="block text-sm text-slate-400 mb-1">CNPJ</label>
-                <input type="text" name="cnpj" value={formData.cnpj} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white" />
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  CNPJ / Identificação Fiscal
+                </label>
+                <input
+                  type="text"
+                  name="cnpj"
+                  value={formData.cnpj}
+                  onChange={handleChange}
+                  placeholder="00.000.000/0001-00"
+                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                />
               </div>
+
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Email de Contato</label>
-                <input type="email" name="email_empresa" value={formData.email_empresa} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white" />
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  E-mail Comercial
+                </label>
+                <input
+                  type="email"
+                  name="email_empresa"
+                  value={formData.email_empresa}
+                  onChange={handleChange}
+                  placeholder="contato@empresa.com"
+                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                />
               </div>
+
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Telefone</label>
-                <input type="text" name="telefone_empresa" value={formData.telefone_empresa} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white" />
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Telefone / WhatsApp
+                </label>
+                <input
+                  type="text"
+                  name="telefone_empresa"
+                  value={formData.telefone_empresa}
+                  onChange={handleChange}
+                  placeholder="(11) 99999-9999"
+                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                />
               </div>
+
               <div className="md:col-span-2">
-                <label className="block text-sm text-slate-400 mb-1">Endereço Completo</label>
-                <input type="text" name="endereco" value={formData.endereco} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white" />
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Endereço Comercial Completo
+                </label>
+                <input
+                  type="text"
+                  name="endereco"
+                  value={formData.endereco}
+                  onChange={handleChange}
+                  placeholder="Av. Paulista, 1000 - Cj 50 - São Paulo/SP"
+                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                />
               </div>
+
               <div className="md:col-span-2">
-                <label className="block text-sm text-slate-400 mb-1">Website</label>
-                <input type="text" name="website" value={formData.website} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white" />
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Website da Empresa
+                </label>
+                <input
+                  type="text"
+                  name="website"
+                  value={formData.website}
+                  onChange={handleChange}
+                  placeholder="https://www.suaempresa.com.br"
+                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                />
               </div>
             </div>
-          </section>
+          </div>
+        )}
 
-          {/* Textos Padrão */}
-          <section className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-            <h2 className="text-xl font-semibold mb-4 text-blue-400">Textos Padrão</h2>
+        {/* Tab 2: Logo & Marca */}
+        {activeTab === 'identidade' && (
+          <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800/90 backdrop-blur-xl space-y-6">
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <Image className="w-4 h-4 text-blue-400" />
+              <span>Marca e Logotipo nas Propostas</span>
+            </h2>
+
+            <div className="flex flex-col md:flex-row gap-6 items-center bg-slate-950/60 p-6 rounded-2xl border border-slate-800/80">
+              <div className="w-32 h-32 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center overflow-hidden shrink-0 shadow-lg">
+                {logoFile ? (
+                  <img src={URL.createObjectURL(logoFile)} alt="Preview Logo" className="w-full h-full object-contain p-2" />
+                ) : formData.logo_url ? (
+                  <img src={formData.logo_url} alt="Logo Atual" className="w-full h-full object-contain p-2" />
+                ) : (
+                  <Upload className="w-8 h-8 text-slate-600" />
+                )}
+              </div>
+
+              <div className="space-y-3 flex-1">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="block w-full text-xs text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer"
+                />
+                <p className="text-xs text-slate-500">
+                  Recomendado: Formato PNG transparente com dimensões mínimas de 300x100px. O logotipo será incluído no cabeçalho das propostas geradas em PDF.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Textos & Termos */}
+        {activeTab === 'termos' && (
+          <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800/90 backdrop-blur-xl space-y-6">
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <FileText className="w-4 h-4 text-blue-400" />
+              <span>Cláusulas e Rodapé Padrão</span>
+            </h2>
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Termos e Condições (Padrão para Propostas)</label>
-                <textarea name="termos_condicoes" rows="4" value={formData.termos_condicoes} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white" placeholder="Ex: Validade da proposta de 15 dias..." />
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Termos e Condições Padrão (Propostas)
+                </label>
+                <textarea
+                  name="termos_condicoes"
+                  rows={5}
+                  value={formData.termos_condicoes}
+                  onChange={handleChange}
+                  placeholder="Ex: Esta proposta tem validade de 15 dias corridos a contar da data de emissão. O pagamento será efetuado em 50% no aceite e 50% na entrega."
+                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                />
               </div>
+
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Mensagem de Rodapé</label>
-                <input type="text" name="mensagem_rodape" value={formData.mensagem_rodape} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white" placeholder="Ex: Obrigado pela preferência!" />
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Mensagem de Rodapé Agradecimento
+                </label>
+                <input
+                  type="text"
+                  name="mensagem_rodape"
+                  value={formData.mensagem_rodape}
+                  onChange={handleChange}
+                  placeholder="Ex: Agradecemos a oportunidade de apresentar esta proposta comercial."
+                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                />
               </div>
             </div>
-          </section>
-
-          <div className="flex justify-end pt-4">
-            <button type="submit" disabled={saving} className="flex items-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition disabled:opacity-50">
-              <Save size={20} />
-              {saving ? 'Salvando...' : 'Salvar Alterações'}
-            </button>
           </div>
+        )}
 
-        </form>
-      </div>
+        {/* Submit Bar */}
+        <div className="flex justify-end pt-4">
+          <button
+            type="submit"
+            disabled={saving}
+            className="px-8 py-3.5 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-500 transition duration-200 shadow-lg shadow-blue-600/20 flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Salvando...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>Salvar Configurações</span>
+              </>
+            )}
+          </button>
+        </div>
+      </form>
     </div>
-  )
+  );
 }
