@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FileText, Sparkles, ShieldCheck, TrendingUp, Zap, Check, ArrowRight, 
-  ChevronDown, Clock, BarChart3, Lock, Users, Star, CheckCircle2, 
-  HelpCircle, Eye, RefreshCw, Send, Layers, Building2, ChevronRight, X, Copy, BookOpen
+import {
+  FileText, ShieldCheck, TrendingUp, Zap, Check, ArrowRight,
+  ChevronDown, Clock, BarChart3, Users, Eye, Send, Layers,
+  X, BookOpen, ChevronRight, Workflow, Package
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -27,7 +27,7 @@ export default function LandingPage() {
     },
     {
       question: "Como a plataforma acelera a criação das propostas?",
-      answer: "Você pode utilizar nossa Biblioteca de Modelos pré-formatados (estilo Business-in-a-Box) ou preencher o escopo automaticamente com auxílio da nossa IA em menos de 2 minutos."
+      answer: "Você pode utilizar nossa Biblioteca de Modelos pré-formatados ou preencher o escopo automaticamente com auxílio da IA integrada em menos de 2 minutos."
     },
     {
       question: "Posso personalizar com a minha própria logomarca e marca?",
@@ -39,408 +39,471 @@ export default function LandingPage() {
     }
   ];
 
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-blue-600 selection:text-white overflow-x-hidden">
-      {/* Glow de Fundo Sutil */}
-      <motion.div
-        animate={{
-          scale: [1, 1.15, 1],
-          opacity: [0.15, 0.3, 0.15],
-        }}
-        transition={{
-          duration: 10,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        className="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-gradient-to-b from-blue-600/15 via-indigo-600/10 to-transparent rounded-full blur-[180px] pointer-events-none z-0"
-      />
+  const features = [
+    {
+      icon: FileText,
+      title: 'Propostas em 2 minutos',
+      description: 'Monte propostas profissionais usando blocos reutilizáveis e modelos por nicho. Sem digitar do zero.'
+    },
+    {
+      icon: Eye,
+      title: 'Rastreamento de leitura',
+      description: 'Saiba exatamente quando o cliente abriu, quanto tempo ficou em cada seção e quantas vezes revisitou.'
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Aceite digital com validade jurídica',
+      description: 'Registro automático de nome, IP, data/hora e hash SHA-256 em conformidade com a legislação brasileira.'
+    },
+    {
+      icon: Workflow,
+      title: 'Proposta vira contrato em 1 clique',
+      description: 'Converta automaticamente a proposta aprovada em contrato de prestação de serviço sem retrabalho.'
+    },
+    {
+      icon: BarChart3,
+      title: 'Pipeline comercial completo',
+      description: 'CRM Kanban integrado com funil de vendas, acompanhamento de negociações e previsão de receita.'
+    },
+    {
+      icon: Layers,
+      title: 'Biblioteca de conteúdo',
+      description: 'Blocos de escopo, cláusulas, cases e termos jurídicos organizados para montar propostas sem escrever.'
+    },
+  ];
 
-      {/* Navbar Superior Linear Style */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-slate-950/85 border-b border-slate-800/80 transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 p-0.5 shadow-md shadow-blue-600/20">
-              <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-                <FileText className="w-4 h-4 text-blue-400" />
-              </div>
+  return (
+    <div className="min-h-screen bg-[#0a0a0f] text-[#f0f0f5] font-sans selection:bg-blue-600/30 selection:text-white overflow-x-hidden">
+
+      {/* ── Navbar ── */}
+      <header className="sticky top-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-[#1e1e2e]">
+        <div className="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate('/')}>
+            <div className="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center">
+              <FileText className="w-3.5 h-3.5 text-white" />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-lg tracking-tight text-white">PropostaFácil</span>
-              <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded">
-                Plataforma Comercial
-              </span>
-            </div>
+            <span className="font-semibold text-[15px] text-white tracking-tight">PropostaFácil</span>
           </div>
 
-          <nav className="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-wider text-slate-300">
-            <a href="#problema" className="hover:text-blue-400 transition">O Problema</a>
-            <a href="#recursos" className="hover:text-blue-400 transition">Recursos</a>
-            <a href="#comparativo" className="hover:text-blue-400 transition">Comparativo</a>
-            <a href="#templates" className="hover:text-blue-400 transition">Modelos</a>
-            <a href="#precos" className="hover:text-blue-400 transition">Preços</a>
-            <a href="#faq" className="hover:text-blue-400 transition">FAQ</a>
+          <nav className="hidden md:flex items-center gap-6 text-[13px] font-medium text-[#8888a0]">
+            <a href="#recursos" className="hover:text-white transition">Recursos</a>
+            <a href="#comparativo" className="hover:text-white transition">Comparativo</a>
+            <a href="#modelos" className="hover:text-white transition">Modelos</a>
+            <a href="#precos" className="hover:text-white transition">Precos</a>
+            <a href="#faq" className="hover:text-white transition">FAQ</a>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => navigate('/login')}
-              className="px-4 py-2 text-xs font-bold text-slate-300 hover:text-white transition"
+              className="px-3 py-1.5 text-[13px] font-medium text-[#8888a0] hover:text-white transition"
             >
               Entrar
             </button>
             <button
               onClick={() => navigate('/login')}
-              className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 transition shadow-lg shadow-blue-600/25 flex items-center gap-2 cursor-pointer"
+              className="px-3.5 py-1.5 rounded-md text-[13px] font-medium text-white bg-blue-600 hover:bg-blue-700 transition cursor-pointer"
             >
-              <span>Testar Agora</span>
-              <ArrowRight className="w-4 h-4" />
+              Começar grátis
             </button>
           </div>
         </div>
       </header>
 
-      {/* Hero Section (Vendas & Conversão) */}
-      <section className="relative pt-16 pb-24 md:pt-24 md:pb-32 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
-          
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/90 border border-blue-500/30 text-blue-400 text-xs font-bold uppercase tracking-wider shadow-inner">
-            <Zap className="w-3.5 h-3.5 text-blue-400" />
-            <span>A Plataforma Comercial que Leva sua Negociação até a Assinatura</span>
+      {/* ── Hero ── */}
+      <section className="pt-20 pb-16 md:pt-28 md:pb-24 relative z-10">
+        <div className="max-w-3xl mx-auto px-5 text-center space-y-6">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-600/8 border border-blue-500/15 text-blue-400 text-xs font-medium">
+            <Zap className="w-3 h-3" />
+            <span>Plataforma comercial para equipes de vendas</span>
           </div>
 
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white max-w-5xl mx-auto leading-[1.1]">
-            Transforme Propostas Comerciais em <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-cyan-400 bg-clip-text text-transparent">Contratos Assinados</span> em Minutos
+          <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-semibold tracking-tight text-white leading-[1.15]">
+            Transforme propostas comerciais em contratos assinados
           </h1>
 
-          <p className="text-slate-400 text-base sm:text-xl max-w-3xl mx-auto leading-relaxed font-medium">
-            Elimine a perda de vendas por falta de acompanhamento. Crie propostas irrecusáveis, acompanhe a leitura do cliente em tempo real e colha o aceite digital instantâneo.
+          <p className="text-[#8888a0] text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+            Crie, envie e rastreie propostas profissionais. Acompanhe a leitura do cliente em tempo real e receba o aceite digital instantâneo.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <button
               onClick={() => navigate('/login')}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-wider text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 transition duration-200 shadow-xl shadow-blue-600/30 flex items-center justify-center gap-3 cursor-pointer group"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-md font-medium text-sm text-white bg-blue-600 hover:bg-blue-700 transition flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Criar Minha Primeira Proposta</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <span>Criar minha primeira proposta</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
             <a
               href="#comparativo"
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold text-sm text-slate-300 hover:text-white bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-md font-medium text-sm text-[#8888a0] hover:text-white bg-transparent border border-[#1e1e2e] hover:border-[#2a2a3e] transition flex items-center justify-center gap-2"
             >
-              <span>Ver Comparativo com Word/PDF</span>
+              Ver comparativo
             </a>
           </div>
+        </div>
 
-          {/* Screenshot Real do Sistema */}
-          <div className="pt-8 relative max-w-6xl mx-auto">
-            <div className="relative rounded-3xl p-2 bg-gradient-to-b from-blue-500/20 via-slate-800/40 to-slate-900/60 border border-slate-800 shadow-[0_25px_60px_rgba(0,0,0,0.7)] overflow-hidden">
-              <img
-                src="/images/landing_hero_mockup.png"
-                alt="Interface do PropostaFácil"
-                className="w-full h-auto rounded-2xl object-cover"
-              />
+        {/* Screenshot */}
+        <div className="pt-12 max-w-5xl mx-auto px-5">
+          <div className="rounded-lg border border-[#1e1e2e] overflow-hidden bg-[#111118]">
+            <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-[#1e1e2e]">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#2a2a3e]" />
+              <div className="w-2.5 h-2.5 rounded-full bg-[#2a2a3e]" />
+              <div className="w-2.5 h-2.5 rounded-full bg-[#2a2a3e]" />
             </div>
+            <img
+              src="/images/landing_hero_mockup.png"
+              alt="Interface do PropostaFácil"
+              className="w-full h-auto object-cover"
+            />
           </div>
         </div>
       </section>
 
-      {/* Problema vs Solução */}
-      <section id="problema" className="py-24 bg-slate-900/50 border-y border-slate-800/80 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-          <div className="text-center space-y-4 max-w-3xl mx-auto">
-            <h2 className="text-xs font-extrabold uppercase tracking-widest text-rose-400">O Gargalo Comercial</h2>
-            <p className="text-3xl sm:text-5xl font-black tracking-tight text-white">Por que você está perdendo vendas no fechamento?</p>
+      {/* ── Problema vs Solução ── */}
+      <section className="py-20 border-y border-[#1e1e2e] bg-[#0d0d14]">
+        <div className="max-w-5xl mx-auto px-5 space-y-12">
+          <div className="text-center space-y-3 max-w-2xl mx-auto">
+            <p className="text-xs font-medium uppercase tracking-widest text-[#555568]">O gargalo comercial</p>
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
+              Por que você está perdendo vendas no fechamento?
+            </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="p-8 rounded-3xl bg-slate-950 border border-rose-500/20 space-y-6">
-              <div className="flex items-center gap-3 text-rose-400">
-                <X className="w-6 h-6" />
-                <h3 className="text-lg font-bold text-white">O Modelo Tradicional (Word / PDF)</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-6 rounded-lg bg-[#111118] border border-[#1e1e2e] space-y-5">
+              <div className="flex items-center gap-2.5">
+                <X className="w-4 h-4 text-red-400" />
+                <h3 className="text-sm font-semibold text-white">O modelo tradicional (Word / PDF)</h3>
               </div>
-              <ul className="space-y-4 text-xs text-slate-400">
-                <li className="flex items-start gap-3"><span className="text-rose-400 font-bold">✕</span> Demora de 2 a 4 horas para montar cada proposta do zero.</li>
-                <li className="flex items-start gap-3"><span className="text-rose-400 font-bold">✕</span> Zero visibilidade: você não sabe se o cliente abriu ou ignorou o PDF.</li>
-                <li className="flex items-start gap-3"><span className="text-rose-400 font-bold">✕</span> Processo burocrático de impressão, assinatura física e escaneamento.</li>
-                <li className="flex items-start gap-3"><span className="text-rose-400 font-bold">✕</span> Propostas paradas por semanas sem qualquer acompanhamento comercial.</li>
+              <ul className="space-y-3 text-sm text-[#8888a0]">
+                <li className="flex items-start gap-2.5">
+                  <span className="text-red-400/70 mt-0.5 shrink-0">—</span>
+                  Demora de 2 a 4 horas para montar cada proposta do zero
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="text-red-400/70 mt-0.5 shrink-0">—</span>
+                  Zero visibilidade: você não sabe se o cliente abriu ou ignorou
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="text-red-400/70 mt-0.5 shrink-0">—</span>
+                  Processo burocrático de impressão, assinatura e escaneamento
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="text-red-400/70 mt-0.5 shrink-0">—</span>
+                  Propostas paradas por semanas sem acompanhamento
+                </li>
               </ul>
             </div>
 
-            <div className="p-8 rounded-3xl bg-slate-950 border border-emerald-500/30 space-y-6">
-              <div className="flex items-center gap-3 text-emerald-400">
-                <CheckCircle2 className="w-6 h-6" />
-                <h3 className="text-lg font-bold text-white">Com a Plataforma PropostaFácil</h3>
+            <div className="p-6 rounded-lg bg-[#111118] border border-[#1e1e2e] space-y-5">
+              <div className="flex items-center gap-2.5">
+                <Check className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-sm font-semibold text-white">Com o PropostaFácil</h3>
               </div>
-              <ul className="space-y-4 text-xs text-slate-300">
-                <li className="flex items-start gap-3"><span className="text-emerald-400 font-bold">✓</span> Propostas e escopos gerados em menos de 2 minutos via Templates ou IA.</li>
-                <li className="flex items-start gap-3"><span className="text-emerald-400 font-bold">✓</span> Rastreamento de visualizações em tempo real com alerta de follow-up.</li>
-                <li className="flex items-start gap-3"><span className="text-emerald-400 font-bold">✓</span> Aceite digital instantâneo com registro de IP, data/hora e nome do cliente.</li>
-                <li className="flex items-start gap-3"><span className="text-emerald-400 font-bold">✓</span> Conversão automática da proposta em contrato de prestação de serviço.</li>
+              <ul className="space-y-3 text-sm text-[#c0c0d0]">
+                <li className="flex items-start gap-2.5">
+                  <span className="text-emerald-400/70 mt-0.5 shrink-0">—</span>
+                  Propostas geradas em menos de 2 minutos via templates ou IA
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="text-emerald-400/70 mt-0.5 shrink-0">—</span>
+                  Rastreamento de visualizações com alerta de follow-up
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="text-emerald-400/70 mt-0.5 shrink-0">—</span>
+                  Aceite digital instantâneo com registro de IP e data/hora
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="text-emerald-400/70 mt-0.5 shrink-0">—</span>
+                  Conversão automática da proposta em contrato
+                </li>
               </ul>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Tabela Comparativa direta */}
-      <section id="comparativo" className="py-24 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 relative z-10">
-        <div className="text-center space-y-4">
-          <h2 className="text-xs font-extrabold uppercase tracking-widest text-blue-400">Comparação Comercial</h2>
-          <p className="text-3xl sm:text-4xl font-black tracking-tight text-white">PropostaFácil vs PDF Tradicional</p>
-        </div>
-
-        <div className="overflow-x-auto rounded-3xl border border-slate-800 bg-slate-900/80">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-slate-800 uppercase text-[10px] tracking-wider text-slate-400 bg-slate-950">
-                <th className="p-4 font-extrabold">Funcionalidade Comercial</th>
-                <th className="p-4 font-extrabold text-slate-400">PDF / Word Tradicional</th>
-                <th className="p-4 font-extrabold text-blue-400">PropostaFácil</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/80 text-slate-300">
-              <tr>
-                <td className="p-4 font-bold">Tempo Médio de Elaboração</td>
-                <td className="p-4 text-slate-500">2 a 4 Horas</td>
-                <td className="p-4 text-emerald-400 font-extrabold">Menos de 2 Minutos</td>
-              </tr>
-              <tr>
-                <td className="p-4 font-bold">Rastreamento de Leitura do Cliente</td>
-                <td className="p-4 text-rose-400 font-bold">Impossível (Estático)</td>
-                <td className="p-4 text-emerald-400 font-extrabold">Tempo Real (Alerta de Leitura)</td>
-              </tr>
-              <tr>
-                <td className="p-4 font-bold">Aceite Digital Instantâneo com IP</td>
-                <td className="p-4 text-rose-400 font-bold">Não Possui</td>
-                <td className="p-4 text-emerald-400 font-extrabold">Sim (Link Rastreável /p/:id)</td>
-              </tr>
-              <tr>
-                <td className="p-4 font-bold">Conversão Automática em Contrato</td>
-                <td className="p-4 text-rose-400 font-bold">Não Possui</td>
-                <td className="p-4 text-emerald-400 font-extrabold">Sim (1-Clique)</td>
-              </tr>
-              <tr>
-                <td className="p-4 font-bold">Modelos Pré-Formatados (Business-in-a-Box)</td>
-                <td className="p-4 text-slate-500">Arquivos Desorganizados</td>
-                <td className="p-4 text-emerald-400 font-extrabold">Biblioteca Integrada por Nicho</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* Modelos de Documentos (Inspirado no Business-in-a-Box) */}
-      <section id="templates" className="py-24 bg-slate-900/40 border-y border-slate-800/80 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-          <div className="text-center space-y-4 max-w-3xl mx-auto">
-            <h2 className="text-xs font-extrabold uppercase tracking-widest text-amber-400">Biblioteca de Documentos</h2>
-            <p className="text-3xl sm:text-5xl font-black tracking-tight text-white">Modelos Prontos inspirados no Business-in-a-Box</p>
-            <p className="text-slate-400 text-sm">Acesse uma estrutura completa de documentos comerciais e minutas contratuais pré-formatadas para o seu setor.</p>
+      {/* ── Recursos ── */}
+      <section id="recursos" className="py-20">
+        <div className="max-w-5xl mx-auto px-5 space-y-12">
+          <div className="text-center space-y-3 max-w-2xl mx-auto">
+            <p className="text-xs font-medium uppercase tracking-widest text-[#555568]">Recursos</p>
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
+              Tudo que sua equipe comercial precisa em um lugar
+            </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="p-8 rounded-3xl bg-slate-950 border border-slate-800 space-y-4">
-              <span className="px-2.5 py-1 text-[10px] font-extrabold uppercase bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded">
-                Tecnologia & SaaS
-              </span>
-              <h3 className="text-base font-bold text-white">Propostas de Desenvolvimento & TI</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Escopos pré-definidos para desenvolvimento web, softwares sob medida, aplicativos e infraestrutura de TI.
-              </p>
-            </div>
-
-            <div className="p-8 rounded-3xl bg-slate-950 border border-slate-800 space-y-4">
-              <span className="px-2.5 py-1 text-[10px] font-extrabold uppercase bg-amber-500/10 text-amber-300 border border-amber-500/20 rounded">
-                Consultoria & Serviços
-              </span>
-              <h3 className="text-base font-bold text-white">Consultoria Empresarial & Vendas</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Modelos de diagnóstico estratégico, assessoria em processos comerciais e treinamento de equipes.
-              </p>
-            </div>
-
-            <div className="p-8 rounded-3xl bg-slate-950 border border-slate-800 space-y-4">
-              <span className="px-2.5 py-1 text-[10px] font-extrabold uppercase bg-purple-500/10 text-purple-300 border border-purple-500/20 rounded">
-                Jurídico & Contratos
-              </span>
-              <h3 className="text-base font-bold text-white">Contratos de Serviços & NDAs</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Minutas de contratos com validade jurídica, termos de confidencialidade e aditivos contratuais.
-              </p>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {features.map((feat, idx) => {
+              const Icon = feat.icon;
+              return (
+                <div key={idx} className="p-5 rounded-lg bg-[#111118] border border-[#1e1e2e] hover:border-[#2a2a3e] transition space-y-3">
+                  <Icon className="w-4 h-4 text-[#8888a0]" />
+                  <h3 className="text-sm font-semibold text-white">{feat.title}</h3>
+                  <p className="text-[13px] text-[#8888a0] leading-relaxed">{feat.description}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Seção de Preços (Faturamento R$99 a R$399/mês) */}
-      <section id="precos" className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16 relative z-10">
-        <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <h2 className="text-xs font-extrabold uppercase tracking-widest text-blue-400">Investimento com Retorno Rápido</h2>
-          <p className="text-3xl sm:text-5xl font-black tracking-tight text-white">Planos Comerciais de Alta Performance</p>
-          
-          <div className="pt-4 flex items-center justify-center gap-4">
-            <span className={`text-xs font-bold ${billingCycle === 'monthly' ? 'text-white' : 'text-slate-400'}`}>Mensal</span>
-            <button
-              onClick={() => setBillingCycle(billingCycle === 'annual' ? 'monthly' : 'annual')}
-              className="w-14 h-8 rounded-full bg-slate-800 p-1 relative border border-slate-700 transition cursor-pointer"
-            >
-              <div className={`w-6 h-6 rounded-full bg-blue-500 transition-transform ${billingCycle === 'annual' ? 'translate-x-6' : 'translate-x-0'}`} />
-            </button>
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-bold ${billingCycle === 'annual' ? 'text-white' : 'text-slate-400'}`}>Anual</span>
-              <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md">20% OFF</span>
-            </div>
+      {/* ── Comparativo ── */}
+      <section id="comparativo" className="py-20 border-y border-[#1e1e2e] bg-[#0d0d14]">
+        <div className="max-w-4xl mx-auto px-5 space-y-10">
+          <div className="text-center space-y-3">
+            <p className="text-xs font-medium uppercase tracking-widest text-[#555568]">Comparativo</p>
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
+              PropostaFácil vs PDF tradicional
+            </h2>
+          </div>
+
+          <div className="overflow-x-auto rounded-lg border border-[#1e1e2e]">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-[#1e1e2e] text-xs text-[#555568] uppercase tracking-wider bg-[#111118]">
+                  <th className="p-4 font-medium">Funcionalidade</th>
+                  <th className="p-4 font-medium">PDF / Word</th>
+                  <th className="p-4 font-medium text-blue-400">PropostaFácil</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1e1e2e] text-[#8888a0]">
+                <tr className="bg-[#0a0a0f]">
+                  <td className="p-4 font-medium text-[#c0c0d0]">Tempo de elaboração</td>
+                  <td className="p-4">2 a 4 horas</td>
+                  <td className="p-4 text-emerald-400 font-medium">Menos de 2 min</td>
+                </tr>
+                <tr className="bg-[#111118]">
+                  <td className="p-4 font-medium text-[#c0c0d0]">Rastreamento de leitura</td>
+                  <td className="p-4 text-[#555568]">Impossível</td>
+                  <td className="p-4 text-emerald-400 font-medium">Tempo real</td>
+                </tr>
+                <tr className="bg-[#0a0a0f]">
+                  <td className="p-4 font-medium text-[#c0c0d0]">Aceite digital com IP</td>
+                  <td className="p-4 text-[#555568]">Não possui</td>
+                  <td className="p-4 text-emerald-400 font-medium">Sim</td>
+                </tr>
+                <tr className="bg-[#111118]">
+                  <td className="p-4 font-medium text-[#c0c0d0]">Conversão em contrato</td>
+                  <td className="p-4 text-[#555568]">Manual</td>
+                  <td className="p-4 text-emerald-400 font-medium">1 clique</td>
+                </tr>
+                <tr className="bg-[#0a0a0f]">
+                  <td className="p-4 font-medium text-[#c0c0d0]">Modelos por nicho</td>
+                  <td className="p-4 text-[#555568]">Desorganizados</td>
+                  <td className="p-4 text-emerald-400 font-medium">Biblioteca integrada</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
+      </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          
-          {/* Starter */}
-          <div className="p-8 rounded-3xl bg-slate-950 border border-slate-800 space-y-6 flex flex-col justify-between">
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-white">Starter</h3>
-              <p className="text-xs text-slate-400">Para profissionais autônomos e pequenos consultores.</p>
-              <div className="pt-2">
-                <span className="text-4xl font-black text-white">
-                  R$ {billingCycle === 'annual' ? '79' : '99'}
+      {/* ── Modelos ── */}
+      <section id="modelos" className="py-20">
+        <div className="max-w-5xl mx-auto px-5 space-y-12">
+          <div className="text-center space-y-3 max-w-2xl mx-auto">
+            <p className="text-xs font-medium uppercase tracking-widest text-[#555568]">Biblioteca de documentos</p>
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
+              Modelos prontos para o seu setor
+            </h2>
+            <p className="text-sm text-[#8888a0]">
+              Estrutura completa de documentos comerciais e minutas contratuais pré-formatadas.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {[
+              { tag: 'Tecnologia & SaaS', title: 'Desenvolvimento & TI', desc: 'Escopos para desenvolvimento web, softwares, apps e infraestrutura de TI.' },
+              { tag: 'Consultoria', title: 'Serviços & Vendas', desc: 'Diagnóstico estratégico, assessoria em processos comerciais e treinamento.' },
+              { tag: 'Jurídico', title: 'Contratos & NDAs', desc: 'Minutas com validade jurídica, termos de confidencialidade e aditivos.' },
+            ].map((item, idx) => (
+              <div key={idx} className="p-5 rounded-lg bg-[#111118] border border-[#1e1e2e] hover:border-[#2a2a3e] transition space-y-3">
+                <span className="text-[11px] font-medium text-[#8888a0] bg-[#1a1a24] px-2 py-0.5 rounded">
+                  {item.tag}
                 </span>
-                <span className="text-xs text-slate-400"> /mês</span>
+                <h3 className="text-sm font-semibold text-white">{item.title}</h3>
+                <p className="text-[13px] text-[#8888a0] leading-relaxed">{item.desc}</p>
               </div>
-              <ul className="space-y-3 text-xs text-slate-300 pt-4">
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Até 15 propostas comerciais/mês</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Aceite Digital via Link Público (/p/:id)</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Exportação em PDF Executivo</li>
-              </ul>
-            </div>
-            <button
-              onClick={() => navigate('/login')}
-              className="w-full py-3 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-300 bg-slate-900 border border-slate-800 hover:text-white hover:bg-slate-800 transition cursor-pointer"
-            >
-              Começar Agora
-            </button>
+            ))}
           </div>
-
-          {/* Professional (Destaque) */}
-          <div className="p-8 rounded-3xl bg-slate-900/90 border-2 border-blue-500 space-y-6 flex flex-col justify-between relative shadow-2xl shadow-blue-500/10">
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-blue-600 text-white text-[10px] font-extrabold uppercase tracking-wider">
-              Recomendado
-            </div>
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-white">Professional</h3>
-              <p className="text-xs text-slate-400">Para empresas e agências em crescimento comercial.</p>
-              <div className="pt-2">
-                <span className="text-4xl font-black text-white">
-                  R$ {billingCycle === 'annual' ? '159' : '199'}
-                </span>
-                <span className="text-xs text-slate-400"> /mês</span>
-              </div>
-              <ul className="space-y-3 text-xs text-slate-300 pt-4">
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-400" /> Propostas e Contratos Ilimitados</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-400" /> CRM Kanban & Funil de Oportunidades</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-400" /> Assistente de Vendas com IA</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-400" /> Biblioteca Business-in-a-Box</li>
-              </ul>
-            </div>
-            <button
-              onClick={() => navigate('/login')}
-              className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 transition shadow-lg shadow-blue-600/30 cursor-pointer"
-            >
-              Assinar Plano Professional
-            </button>
-          </div>
-
-          {/* Scale Enterprise */}
-          <div className="p-8 rounded-3xl bg-slate-950 border border-slate-800 space-y-6 flex flex-col justify-between">
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-white">Scale Enterprise</h3>
-              <p className="text-xs text-slate-400">Para equipes de vendas comerciais de alta demanda.</p>
-              <div className="pt-2">
-                <span className="text-4xl font-black text-white">
-                  R$ {billingCycle === 'annual' ? '319' : '399'}
-                </span>
-                <span className="text-xs text-slate-400"> /mês</span>
-              </div>
-              <ul className="space-y-3 text-xs text-slate-300 pt-4">
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Múltiplos Usuários & Equipes</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Construtor de Automações & Réguas</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Gerente de Conta Dedicado</li>
-              </ul>
-            </div>
-            <button
-              onClick={() => navigate('/login')}
-              className="w-full py-3 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-300 bg-slate-900 border border-slate-800 hover:text-white hover:bg-slate-800 transition cursor-pointer"
-            >
-              Falar com Vendas
-            </button>
-          </div>
-
         </div>
       </section>
 
-      {/* FAQ */}
-      <section id="faq" className="py-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 relative z-10">
-        <div className="text-center space-y-4">
-          <h2 className="text-xs font-extrabold uppercase tracking-widest text-blue-400">Esclarecimentos</h2>
-          <p className="text-3xl sm:text-4xl font-black tracking-tight text-white">Perguntas Frequentes</p>
-        </div>
+      {/* ── Preços ── */}
+      <section id="precos" className="py-20 border-y border-[#1e1e2e] bg-[#0d0d14]">
+        <div className="max-w-5xl mx-auto px-5 space-y-12">
+          <div className="text-center space-y-3 max-w-2xl mx-auto">
+            <p className="text-xs font-medium uppercase tracking-widest text-[#555568]">Precos</p>
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
+              Planos para cada momento da sua empresa
+            </h2>
 
-        <div className="space-y-4">
-          {faqs.map((faq, index) => (
-            <div
-              key={index}
-              className="rounded-2xl bg-slate-900/80 border border-slate-800/80 overflow-hidden transition"
-            >
+            <div className="pt-3 flex items-center justify-center gap-3">
+              <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-white' : 'text-[#555568]'}`}>Mensal</span>
               <button
-                onClick={() => toggleFaq(index)}
-                className="w-full p-6 text-left flex items-center justify-between gap-4 font-bold text-sm text-white hover:text-blue-400 transition cursor-pointer"
+                onClick={() => setBillingCycle(billingCycle === 'annual' ? 'monthly' : 'annual')}
+                className="w-10 h-5 rounded-full bg-[#1e1e2e] p-0.5 relative cursor-pointer transition"
               >
-                <span>{faq.question}</span>
-                <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${activeFaq === index ? 'rotate-180 text-blue-400' : 'text-slate-500'}`} />
+                <div className={`w-4 h-4 rounded-full bg-blue-500 transition-transform ${billingCycle === 'annual' ? 'translate-x-5' : 'translate-x-0'}`} />
               </button>
-              <AnimatePresence>
-                {activeFaq === index && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="px-6 pb-6 text-xs text-slate-400 leading-relaxed border-t border-slate-800/40 pt-4"
-                  >
-                    {faq.answer}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <div className="flex items-center gap-1.5">
+                <span className={`text-sm font-medium ${billingCycle === 'annual' ? 'text-white' : 'text-[#555568]'}`}>Anual</span>
+                <span className="text-[10px] font-medium text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">-20%</span>
+              </div>
             </div>
-          ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* Starter */}
+            <div className="p-6 rounded-lg bg-[#111118] border border-[#1e1e2e] flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-white">Starter</h3>
+                <p className="text-[13px] text-[#555568]">Para profissionais autônomos e pequenos consultores.</p>
+                <div>
+                  <span className="text-3xl font-semibold text-white">
+                    R$ {billingCycle === 'annual' ? '79' : '99'}
+                  </span>
+                  <span className="text-sm text-[#555568] ml-1">/mês</span>
+                </div>
+                <ul className="space-y-2.5 text-sm text-[#8888a0] pt-2">
+                  <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> Até 15 propostas/mês</li>
+                  <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> Aceite digital via link</li>
+                  <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> Exportação em PDF</li>
+                </ul>
+              </div>
+              <button
+                onClick={() => navigate('/login')}
+                className="w-full py-2 rounded-md text-sm font-medium text-[#8888a0] bg-[#1a1a24] border border-[#1e1e2e] hover:text-white hover:border-[#2a2a3e] transition cursor-pointer"
+              >
+                Começar agora
+              </button>
+            </div>
+
+            {/* Professional */}
+            <div className="p-6 rounded-lg bg-[#111118] border-2 border-blue-600/50 flex flex-col justify-between space-y-6 relative">
+              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded text-[10px] font-medium bg-blue-600 text-white">
+                Recomendado
+              </div>
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-white">Professional</h3>
+                <p className="text-[13px] text-[#555568]">Para empresas e agências em crescimento comercial.</p>
+                <div>
+                  <span className="text-3xl font-semibold text-white">
+                    R$ {billingCycle === 'annual' ? '159' : '199'}
+                  </span>
+                  <span className="text-sm text-[#555568] ml-1">/mês</span>
+                </div>
+                <ul className="space-y-2.5 text-sm text-[#8888a0] pt-2">
+                  <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-blue-400 shrink-0" /> Propostas e contratos ilimitados</li>
+                  <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-blue-400 shrink-0" /> CRM Kanban e funil de vendas</li>
+                  <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-blue-400 shrink-0" /> Assistente de vendas com IA</li>
+                  <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-blue-400 shrink-0" /> Biblioteca de blocos</li>
+                </ul>
+              </div>
+              <button
+                onClick={() => navigate('/login')}
+                className="w-full py-2 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition cursor-pointer"
+              >
+                Assinar Professional
+              </button>
+            </div>
+
+            {/* Scale */}
+            <div className="p-6 rounded-lg bg-[#111118] border border-[#1e1e2e] flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-white">Scale</h3>
+                <p className="text-[13px] text-[#555568]">Para equipes de vendas de alta demanda.</p>
+                <div>
+                  <span className="text-3xl font-semibold text-white">
+                    R$ {billingCycle === 'annual' ? '319' : '399'}
+                  </span>
+                  <span className="text-sm text-[#555568] ml-1">/mês</span>
+                </div>
+                <ul className="space-y-2.5 text-sm text-[#8888a0] pt-2">
+                  <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> Múltiplos usuários e equipes</li>
+                  <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> Automações e réguas</li>
+                  <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> Gerente de conta dedicado</li>
+                </ul>
+              </div>
+              <button
+                onClick={() => navigate('/login')}
+                className="w-full py-2 rounded-md text-sm font-medium text-[#8888a0] bg-[#1a1a24] border border-[#1e1e2e] hover:text-white hover:border-[#2a2a3e] transition cursor-pointer"
+              >
+                Falar com vendas
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* CTA Final */}
-      <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="p-10 md:p-16 rounded-3xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-slate-900 border border-blue-500/30 text-center space-y-8 shadow-2xl shadow-blue-600/20 relative overflow-hidden">
-          <div className="max-w-3xl mx-auto space-y-4 relative z-10">
-            <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight">Leve seu Processo Comercial ao Próximo Nível</h2>
-            <p className="text-blue-100 text-sm sm:text-base">Acelere seus fechamentos de vendas com propostas de alto padrão e contratos integrados.</p>
+      {/* ── FAQ ── */}
+      <section id="faq" className="py-20">
+        <div className="max-w-3xl mx-auto px-5 space-y-10">
+          <div className="text-center space-y-3">
+            <p className="text-xs font-medium uppercase tracking-widest text-[#555568]">FAQ</p>
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
+              Perguntas frequentes
+            </h2>
           </div>
-          <div className="relative z-10 pt-4">
-            <button
-              onClick={() => navigate('/login')}
-              className="px-10 py-4 rounded-2xl font-black text-sm uppercase tracking-wider text-slate-950 bg-white hover:bg-slate-100 transition shadow-xl flex items-center justify-center gap-3 mx-auto cursor-pointer"
-            >
-              <span>Criar Minha Primeira Proposta Agora</span>
-              <ArrowRight className="w-5 h-5 text-slate-950" />
-            </button>
+
+          <div className="divide-y divide-[#1e1e2e]">
+            {faqs.map((faq, index) => (
+              <div key={index}>
+                <button
+                  onClick={() => toggleFaq(index)}
+                  className="w-full py-5 text-left flex items-center justify-between gap-4 text-sm font-medium text-[#c0c0d0] hover:text-white transition cursor-pointer"
+                >
+                  <span>{faq.question}</span>
+                  <ChevronDown className={`w-4 h-4 text-[#555568] transition-transform duration-200 shrink-0 ${activeFaq === index ? 'rotate-180' : ''}`} />
+                </button>
+                <AnimatePresence>
+                  {activeFaq === index && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="pb-5 text-sm text-[#8888a0] leading-relaxed overflow-hidden"
+                    >
+                      {faq.answer}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 bg-slate-950 border-t border-slate-800/80 text-xs text-slate-500 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs">PF</div>
-            <span className="font-bold text-slate-300">PropostaFácil B2B Commercial Platform</span>
+      {/* ── CTA Final ── */}
+      <section className="py-20 border-t border-[#1e1e2e]">
+        <div className="max-w-2xl mx-auto px-5 text-center space-y-6">
+          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
+            Leve seu processo comercial ao próximo nível
+          </h2>
+          <p className="text-[#8888a0] text-sm sm:text-base">
+            Propostas profissionais, rastreamento inteligente e contratos integrados em uma só plataforma.
+          </p>
+          <button
+            onClick={() => navigate('/login')}
+            className="px-5 py-2.5 rounded-md font-medium text-sm text-white bg-blue-600 hover:bg-blue-700 transition cursor-pointer inline-flex items-center gap-2"
+          >
+            <span>Criar minha primeira proposta</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className="py-8 border-t border-[#1e1e2e] text-[13px] text-[#555568]">
+        <div className="max-w-6xl mx-auto px-5 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center">
+              <FileText className="w-2.5 h-2.5 text-white" />
+            </div>
+            <span className="font-medium text-[#8888a0]">PropostaFácil</span>
           </div>
           <p>© 2026 PropostaFácil. Todos os direitos reservados.</p>
         </div>

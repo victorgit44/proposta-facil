@@ -17,6 +17,9 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -51,6 +54,17 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        /* ─── Surface tokens (uso direto nas páginas) ─── */
+        surface: {
+          DEFAULT: "#111118",
+          hover: "#1a1a24",
+          active: "#222230",
+        },
+        edge: {
+          DEFAULT: "#1e1e2e",
+          hover: "#2a2a3e",
+        },
+        subtle: "#555568",
       },
       borderRadius: {
         lg: "var(--radius)",

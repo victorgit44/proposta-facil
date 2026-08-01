@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/supabaseClient';
 import {
   TrendingUp, FileText, FileSignature, DollarSign, Clock, AlertCircle,
-  Plus, CheckCircle2, Eye, ArrowUpRight, ArrowRight, Zap, Sparkles,
-  Users, ChevronRight, MessageCircle, RefreshCw, BarChart3, ShieldCheck
+  Plus, Eye, ArrowRight, Zap, Sparkles, ChevronRight, BarChart3, ShieldCheck
 } from 'lucide-react';
 import { ProposalCard } from '@/components/ProposalCard';
 import { formatCurrency } from '@/utils/formatters';
@@ -24,7 +23,7 @@ export default function Home() {
     queryFn: () => base44.entities.Contrato.list(),
   });
 
-  // Cálculo de Métricas Executivas
+  // Métricas
   const totalPropostas = propostas.length;
   const aprovadas = propostas.filter(p => p.status === 'aprovada');
   const enviadas = propostas.filter(p => p.status === 'enviada');
@@ -36,211 +35,151 @@ export default function Home() {
   const ticketMedio = totalPropostas > 0 ? receitaPrevista / totalPropostas : 0;
   const taxaConversao = totalPropostas > 0 ? Math.round((aprovadas.length / totalPropostas) * 100) : 0;
 
-  // Timeline de Atividades Comerciais Simulação/Dados Reais
+  // Funil
+  const funnelStages = [
+    { label: 'Rascunhos', count: rascunhos.length, color: 'bg-[#555568]' },
+    { label: 'Enviadas', count: enviadas.length, color: 'bg-blue-500' },
+    { label: 'Aprovadas', count: aprovadas.length, color: 'bg-emerald-500' },
+    { label: 'Contratos', count: contratos.length, color: 'bg-violet-500' },
+    { label: 'Recusadas', count: recusadas.length, color: 'bg-red-400' },
+  ];
+  const funnelTotal = funnelStages.reduce((s, f) => s + f.count, 0) || 1;
+
+  // Timeline
   const activityTimeline = [
     {
-      id: 1,
-      title: 'Proposta #PROP-697262 visualizada pelo cliente',
-      description: 'O cliente Victor abriu a proposta pública 2 vezes.',
-      time: 'Há 15 minutos',
-      type: 'view',
-      icon: Eye,
-      color: 'text-blue-400 bg-blue-500/10 border-blue-500/20'
+      title: 'Proposta visualizada pelo cliente',
+      description: 'O cliente abriu a proposta pública 2 vezes.',
+      time: 'Há 15 min',
+      dotColor: 'bg-blue-400',
     },
     {
-      id: 2,
-      title: 'Contrato de Prestação de Serviços assinado',
-      description: 'Empresa Eventos GIC assinou o contrato #CONT-102.',
+      title: 'Contrato assinado',
+      description: 'Empresa GIC assinou o contrato #CONT-102.',
       time: 'Há 2 horas',
-      type: 'sign',
-      icon: ShieldCheck,
-      color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+      dotColor: 'bg-emerald-400',
     },
     {
-      id: 3,
-      title: 'Nova proposta gerada com Inteligência Artificial',
-      description: 'Proposta de Consultoria de Vendas B2B criada com sucesso.',
+      title: 'Nova proposta criada',
+      description: 'Proposta de Consultoria B2B gerada com sucesso.',
       time: 'Há 5 horas',
-      type: 'create',
-      icon: Sparkles,
-      color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20'
-    }
+      dotColor: 'bg-violet-400',
+    },
   ];
 
-  // Ações de Recomendação Inteligente da IA (Assistente Invisível)
+  // Insights
   const smartInsights = [
     {
-      title: 'Oportunidade Quente de Fechamento',
-      text: 'A proposta #PROP-697262 foi visualizada recentemente. Recomendamos realizar um contato comercial hoje.',
-      actionText: 'Enviar WhatsApp',
-      action: () => toast.info('Abrindo modelo de mensagem comercial no WhatsApp...')
+      text: 'Uma proposta foi visualizada recentemente mas ainda sem resposta. Considere um follow-up.',
+      actionText: 'Ver proposta',
+      action: () => navigate('/propostas'),
     },
     {
-      title: 'Revisão de Prazos',
-      text: `${enviadas.length} propostas enviadas estão aguardando confirmação do cliente há mais de 3 dias.`,
-      actionText: 'Ver Enviadas',
-      action: () => navigate('/propostas')
-    }
+      text: `${enviadas.length} proposta(s) enviada(s) aguardando confirmação há mais de 3 dias.`,
+      actionText: 'Ver enviadas',
+      action: () => navigate('/propostas'),
+    },
   ];
 
   return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
-      {/* Header Superior */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Centro de Comando Comercial</h1>
-            <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md">
-              High Performance
-            </span>
-          </div>
-          <p className="text-xs text-slate-400 mt-1">Visão consolidada de receitas, funil de propostas e ações de vendas.</p>
-        </div>
+    <div className="p-5 md:p-8 max-w-6xl mx-auto space-y-6">
 
-        <div className="flex items-center gap-3">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-[#1e1e2e]">
+        <div>
+          <h1 className="text-xl font-semibold text-white tracking-tight">Painel</h1>
+          <p className="text-[13px] text-[#555568] mt-0.5">Visão consolidada de vendas, propostas e contratos.</p>
+        </div>
+        <div className="flex items-center gap-2">
           <button
             onClick={() => navigate('/propostas/criar')}
-            className="px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-blue-600 hover:bg-blue-500 transition shadow-lg shadow-blue-600/20 flex items-center gap-2 cursor-pointer"
+            className="px-3 py-1.5 rounded-md text-[13px] font-medium text-white bg-blue-600 hover:bg-blue-700 transition flex items-center gap-1.5 cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
-            <span>Nova Proposta</span>
+            <Plus className="w-3.5 h-3.5" />
+            Nova Proposta
           </button>
-
           <button
             onClick={() => navigate('/contratos/criar')}
-            className="px-4 py-2.5 rounded-xl font-bold text-xs text-slate-300 hover:text-white bg-slate-900 border border-slate-800 transition flex items-center gap-2 cursor-pointer"
+            className="px-3 py-1.5 rounded-md text-[13px] font-medium text-[#8888a0] bg-[#111118] border border-[#1e1e2e] hover:text-white hover:border-[#2a2a3e] transition flex items-center gap-1.5 cursor-pointer"
           >
-            <FileSignature className="w-4 h-4 text-purple-400" />
-            <span>Novo Contrato</span>
+            <FileSignature className="w-3.5 h-3.5" />
+            Novo Contrato
           </button>
         </div>
       </div>
 
-      {/* Grid de KPIs Executivos */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        
-        <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800/90 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Receita Confirmada</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">
-              <DollarSign className="w-4 h-4" />
+      {/* KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Receita confirmada', value: formatCurrency(receitaConfirmada), sub: `${aprovadas.length} fechadas`, icon: DollarSign, subColor: 'text-emerald-400' },
+          { label: 'Pipeline', value: formatCurrency(receitaPrevista), sub: 'Total orçado', icon: BarChart3, subColor: 'text-[#555568]' },
+          { label: 'Conversão', value: `${taxaConversao}%`, sub: `Ticket: ${formatCurrency(ticketMedio)}`, icon: Zap, subColor: 'text-[#555568]' },
+          { label: 'Contratos', value: String(contratos.length), sub: 'Registrados', icon: ShieldCheck, subColor: 'text-[#555568]' },
+        ].map((kpi, idx) => {
+          const Icon = kpi.icon;
+          return (
+            <div key={idx} className="p-4 rounded-lg bg-[#111118] border border-[#1e1e2e] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium uppercase tracking-wider text-[#555568]">{kpi.label}</span>
+                <Icon className="w-4 h-4 text-[#555568]" />
+              </div>
+              <h3 className="text-2xl font-semibold text-white tabular-nums tracking-tight">{kpi.value}</h3>
+              <p className={`text-[11px] font-medium ${kpi.subColor}`}>{kpi.sub}</p>
             </div>
-          </div>
-          <div>
-            <h3 className="text-2xl font-black text-white tracking-tight">{formatCurrency(receitaConfirmada)}</h3>
-            <p className="text-[11px] text-emerald-400 font-semibold mt-1 flex items-center gap-1">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>{aprovadas.length} propostas fechadas</span>
-            </p>
-          </div>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800/90 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Pipeline de Receita</span>
-            <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold">
-              <BarChart3 className="w-4 h-4" />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-2xl font-black text-white tracking-tight">{formatCurrency(receitaPrevista)}</h3>
-            <p className="text-[11px] text-slate-400 font-medium mt-1">Total orçado no sistema</p>
-          </div>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800/90 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Taxa de Conversão</span>
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold">
-              <Zap className="w-4 h-4" />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-2xl font-black text-white tracking-tight">{taxaConversao}%</h3>
-            <p className="text-[11px] text-indigo-400 font-semibold mt-1">Ticket Médio: {formatCurrency(ticketMedio)}</p>
-          </div>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800/90 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Contratos Ativos</span>
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-2xl font-black text-white tracking-tight">{contratos.length}</h3>
-            <p className="text-[11px] text-slate-400 font-medium mt-1">Contratos registrados</p>
-          </div>
-        </div>
-
+          );
+        })}
       </div>
 
-      {/* Funil Comercial Visual (7 Etapas) */}
-      <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800/90 space-y-4">
+      {/* Funil horizontal */}
+      <div className="p-5 rounded-lg bg-[#111118] border border-[#1e1e2e] space-y-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-extrabold text-white uppercase tracking-wider">Funil de Vendas Comercial</h2>
-            <p className="text-xs text-slate-400">Distribuição das propostas pelas etapas de negociação</p>
-          </div>
-          <span className="text-xs font-bold text-slate-400">{totalPropostas} Total</span>
+          <h2 className="text-[13px] font-medium text-white">Funil de vendas</h2>
+          <span className="text-[11px] font-medium text-[#555568]">{totalPropostas} total</span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 pt-2">
-          <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 text-center space-y-1">
-            <span className="text-[10px] font-bold uppercase text-slate-500">Rascunhos</span>
-            <h4 className="text-lg font-black text-white">{rascunhos.length}</h4>
-          </div>
-          <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 text-center space-y-1">
-            <span className="text-[10px] font-bold uppercase text-blue-400">Enviadas</span>
-            <h4 className="text-lg font-black text-white">{enviadas.length}</h4>
-          </div>
-          <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 text-center space-y-1">
-            <span className="text-[10px] font-bold uppercase text-indigo-400">Visualizadas</span>
-            <h4 className="text-lg font-black text-white">1</h4>
-          </div>
-          <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 text-center space-y-1">
-            <span className="text-[10px] font-bold uppercase text-amber-400">Negociação</span>
-            <h4 className="text-lg font-black text-white">0</h4>
-          </div>
-          <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 text-center space-y-1">
-            <span className="text-[10px] font-bold uppercase text-emerald-400">Aprovadas</span>
-            <h4 className="text-lg font-black text-white">{aprovadas.length}</h4>
-          </div>
-          <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 text-center space-y-1">
-            <span className="text-[10px] font-bold uppercase text-purple-400">Contratos</span>
-            <h4 className="text-lg font-black text-white">{contratos.length}</h4>
-          </div>
-          <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 text-center space-y-1 col-span-2 sm:col-span-1">
-            <span className="text-[10px] font-bold uppercase text-rose-400">Recusadas</span>
-            <h4 className="text-lg font-black text-white">{recusadas.length}</h4>
-          </div>
+        {/* Bar */}
+        <div className="flex h-2 rounded-full overflow-hidden bg-[#1a1a24]">
+          {funnelStages.map((stage, idx) => (
+            stage.count > 0 && (
+              <div
+                key={idx}
+                className={`${stage.color} transition-all`}
+                style={{ width: `${(stage.count / funnelTotal) * 100}%` }}
+              />
+            )
+          ))}
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap gap-x-5 gap-y-1">
+          {funnelStages.map((stage, idx) => (
+            <div key={idx} className="flex items-center gap-1.5">
+              <div className={`w-2 h-2 rounded-full ${stage.color}`} />
+              <span className="text-[11px] text-[#8888a0]">{stage.label}</span>
+              <span className="text-[11px] font-semibold text-white">{stage.count}</span>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Grid Duplo: Insights da IA + Timeline de Atividades */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* Coluna Esquerda: Insights Inteligentes de IA */}
-        <div className="lg:col-span-7 space-y-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-400" />
-              <h2 className="text-sm font-extrabold text-white uppercase tracking-wider">Insights Comerciais de IA</h2>
-            </div>
-            <span className="text-[10px] font-bold text-slate-500 uppercase">Assistente Invisível</span>
-          </div>
+      {/* Grid: Insights + Timeline */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-          <div className="space-y-4">
+        {/* Insights + Propostas */}
+        <div className="lg:col-span-7 space-y-5">
+
+          {/* Insights */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-[#555568]" />
+              <h2 className="text-[13px] font-medium text-white">Sugestões</h2>
+            </div>
             {smartInsights.map((insight, idx) => (
-              <div key={idx} className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <h4 className="text-xs font-bold text-white">{insight.title}</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed">{insight.text}</p>
-                </div>
+              <div key={idx} className="p-4 rounded-lg bg-[#111118] border border-[#1e1e2e] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <p className="text-[13px] text-[#8888a0] leading-relaxed">{insight.text}</p>
                 <button
                   onClick={insight.action}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 transition shrink-0 self-start sm:self-center cursor-pointer"
+                  className="px-3 py-1.5 rounded-md text-[12px] font-medium text-blue-400 bg-blue-500/8 hover:bg-blue-500/15 border border-blue-500/15 transition shrink-0 cursor-pointer"
                 >
                   {insight.actionText}
                 </button>
@@ -248,48 +187,41 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Propostas Recentes */}
-          <div className="pt-4 space-y-4">
+          {/* Propostas recentes */}
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-extrabold text-white uppercase tracking-wider">Propostas Recentes</h2>
-              <button onClick={() => navigate('/propostas')} className="text-xs font-bold text-blue-400 hover:text-blue-300 transition flex items-center gap-1">
-                <span>Ver Todas</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+              <h2 className="text-[13px] font-medium text-white">Propostas recentes</h2>
+              <button onClick={() => navigate('/propostas')} className="text-[12px] font-medium text-blue-400 hover:text-blue-300 transition flex items-center gap-1 cursor-pointer">
+                Ver todas <ArrowRight className="w-3 h-3" />
               </button>
             </div>
-
             {propostas.slice(0, 3).map((p) => (
               <ProposalCard key={p.id} proposta={p} onExcluir={() => {}} />
             ))}
           </div>
         </div>
 
-        {/* Coluna Direita: Timeline de Atividades em Tempo Real */}
-        <div className="lg:col-span-5 space-y-5">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-extrabold text-white uppercase tracking-wider">Timeline de Atividades</h2>
-            <span className="text-[10px] font-bold text-slate-500 uppercase">Tempo Real</span>
-          </div>
+        {/* Timeline */}
+        <div className="lg:col-span-5 space-y-3">
+          <h2 className="text-[13px] font-medium text-white">Atividade recente</h2>
+          <div className="p-5 rounded-lg bg-[#111118] border border-[#1e1e2e]">
+            <div className="space-y-5 relative">
+              {/* Vertical line */}
+              <div className="absolute left-[5px] top-2 bottom-2 w-px bg-[#1e1e2e]" />
 
-          <div className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800/90 space-y-6">
-            {activityTimeline.map((act) => {
-              const Icon = act.icon;
-              return (
-                <div key={act.id} className="flex gap-4 relative">
-                  <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${act.color}`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div className="space-y-1 min-w-0">
-                    <p className="text-xs font-bold text-white leading-tight">{act.title}</p>
-                    <p className="text-[11px] text-slate-400 leading-normal">{act.description}</p>
-                    <span className="text-[10px] font-bold text-slate-500 block pt-0.5">{act.time}</span>
+              {activityTimeline.map((act, idx) => (
+                <div key={idx} className="flex gap-3 relative">
+                  <div className={`w-[10px] h-[10px] rounded-full ${act.dotColor} mt-1 shrink-0 relative z-10 ring-2 ring-[#111118]`} />
+                  <div className="space-y-0.5 min-w-0">
+                    <p className="text-[13px] font-medium text-[#c0c0d0] leading-snug">{act.title}</p>
+                    <p className="text-[12px] text-[#555568] leading-normal">{act.description}</p>
+                    <span className="text-[11px] text-[#555568] block">{act.time}</span>
                   </div>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
         </div>
-
       </div>
     </div>
   );

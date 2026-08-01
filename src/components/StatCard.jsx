@@ -1,23 +1,18 @@
 import React from 'react'
 
-export function StatCard({ title, value, subtext, icon, colorClass = 'text-blue-400' }) {
+export function StatCard({ title, value, subtext, icon, colorClass = 'text-[#555568]' }) {
   const IconComponent = icon;
-  
+
   return (
-    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 shadow-lg">
-      <div className="flex justify-between items-start">
-        <div>
-          <p className="text-sm font-medium text-slate-400 mb-2">{title}</p>
-          <p className="text-3xl font-bold text-white">{value}</p>
-          <p className="text-xs text-slate-500 mt-1">{subtext}</p>
-        </div>
-        {/* CORREÇÃO: Remove o fundo 'bg-slate-900' para bater com o design */}
+    <div className="p-4 rounded-lg bg-[#111118] border border-[#1e1e2e] space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-medium uppercase tracking-wider text-[#555568]">{title}</span>
         {IconComponent && (
-          <div className={`${colorClass}`}>
-            <IconComponent size={24} /> {/* Tamanho opcionalmente um pouco maior */}
-          </div>
+          <IconComponent className={`w-4 h-4 ${colorClass}`} />
         )}
       </div>
+      <h3 className="text-2xl font-semibold text-white tabular-nums tracking-tight">{value}</h3>
+      <p className="text-[11px] text-[#555568] font-medium">{subtext}</p>
     </div>
   )
 }

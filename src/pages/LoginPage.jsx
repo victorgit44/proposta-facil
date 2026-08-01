@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, FileText, ShieldCheck, Layers, ArrowRight, Loader2, AlertCircle, CheckCircle2, TrendingUp } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Eye, EyeOff, Mail, Lock, User, FileText, ArrowRight, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/api/supabaseClient';
 
 export default function LoginPage() {
@@ -15,7 +14,6 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Processar Login ou Cadastro
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -24,7 +22,6 @@ export default function LoginPage() {
 
     try {
       if (isSignup) {
-        // Cadastro
         const { data, error: signUpError } = await supabase.auth.signUp({
           email: email.trim(),
           password: password,
@@ -32,23 +29,15 @@ export default function LoginPage() {
             data: { full_name: fullName.trim() }
           }
         });
-
         if (signUpError) throw signUpError;
-
         setSuccessMsg('Conta criada com sucesso! Redirecionando...');
-        setTimeout(() => {
-          navigate('/');
-        }, 1200);
-
+        setTimeout(() => { navigate('/'); }, 1200);
       } else {
-        // Login
         const { data, error: signInError } = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password: password,
         });
-
         if (signInError) throw signInError;
-
         navigate('/');
       }
     } catch (err) {
@@ -60,309 +49,155 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-hidden font-sans selection:bg-blue-600 selection:text-white">
-      {/* ------------------------------------------------------------- */}
-      {/* ELEMENTOS VISUAIS DE FUNDO (ELEGANT ANIMATED GLOW SUTIL)      */}
-      {/* ------------------------------------------------------------- */}
-      <motion.div
-        animate={{
-          scale: [1, 1.15, 1],
-          opacity: [0.2, 0.4, 0.2],
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-tr from-blue-600/20 via-indigo-600/20 to-purple-600/15 rounded-full blur-[160px] pointer-events-none"
-      />
+    <div className="min-h-screen bg-[#0a0a0f] text-[#f0f0f5] flex items-center justify-center px-4 py-12 font-sans">
 
-      <motion.div
-        animate={{
-          x: [0, 35, -20, 0],
-          y: [0, -30, 20, 0],
-          opacity: [0.2, 0.45, 0.2],
-        }}
-        transition={{
-          duration: 12,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        className="absolute bottom-10 left-10 w-96 h-96 bg-blue-600/20 rounded-full blur-[140px] pointer-events-none"
-      />
+      <div className="w-full max-w-[380px] space-y-8">
 
-      <motion.div
-        animate={{
-          x: [0, -35, 25, 0],
-          y: [0, 25, -20, 0],
-          opacity: [0.15, 0.35, 0.15],
-        }}
-        transition={{
-          duration: 10,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        className="absolute top-10 right-10 w-96 h-96 bg-indigo-600/20 rounded-full blur-[140px] pointer-events-none"
-      />
+        {/* Logo */}
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
+            <FileText className="w-4 h-4 text-white" />
+          </div>
+          <div className="text-center">
+            <h1 className="text-lg font-semibold text-white tracking-tight">PropostaFácil</h1>
+            <p className="text-[13px] text-[#555568] mt-0.5">Plataforma Comercial B2B</p>
+          </div>
+        </div>
 
-      {/* Grid sutil de fundo */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none" />
+        {/* Tab switcher */}
+        <div className="flex border-b border-[#1e1e2e]">
+          <button
+            type="button"
+            onClick={() => { setIsSignup(false); setError(''); setSuccessMsg(''); }}
+            className={`flex-1 pb-2.5 text-sm font-medium transition cursor-pointer ${!isSignup
+              ? 'text-white border-b-2 border-blue-500'
+              : 'text-[#555568] hover:text-[#8888a0]'
+            }`}
+          >
+            Entrar
+          </button>
+          <button
+            type="button"
+            onClick={() => { setIsSignup(true); setError(''); setSuccessMsg(''); }}
+            className={`flex-1 pb-2.5 text-sm font-medium transition cursor-pointer ${isSignup
+              ? 'text-white border-b-2 border-blue-500'
+              : 'text-[#555568] hover:text-[#8888a0]'
+            }`}
+          >
+            Criar conta
+          </button>
+        </div>
 
-      {/* ------------------------------------------------------------- */}
-      {/* CONTAINER PRINCIPAL SPLIT SCREEN CORPORATIVO                  */}
-      {/* ------------------------------------------------------------- */}
-      <div className="relative w-full max-w-5xl grid lg:grid-cols-12 rounded-3xl bg-slate-900/80 border border-slate-800/90 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden z-10">
+        {/* Alerts */}
+        {error && (
+          <div className="p-3 rounded-md bg-red-500/8 border border-red-500/20 flex items-start gap-2.5 text-red-400 text-sm">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
 
-        {/* =========================================================== */}
-        {/* COLUNA ESQUERDA - FORMULÁRIO DE AUTENTICAÇÃO CORPORATIVO    */}
-        {/* =========================================================== */}
-        <div className="lg:col-span-6 p-8 sm:p-10 lg:p-12 flex flex-col justify-between">
-          <div>
-            {/* Header da Marca */}
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 p-0.5 shadow-md shadow-blue-600/20">
-                  <div className="w-full h-full bg-slate-900 rounded-[10px] flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-blue-400" />
-                  </div>
-                </div>
-                <div>
-                  <span className="font-bold text-xl tracking-tight text-white">
-                    PropostaFácil
-                  </span>
-                  <span className="ml-2.5 px-2 py-0.5 text-[10px] font-medium bg-slate-800 text-slate-300 border border-slate-700/80 rounded-md">
-                    B2B SaaS
-                  </span>
-                </div>
+        {successMsg && (
+          <div className="p-3 rounded-md bg-emerald-500/8 border border-emerald-500/20 flex items-start gap-2.5 text-emerald-400 text-sm">
+            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{successMsg}</span>
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {isSignup && (
+            <div className="space-y-1.5">
+              <label className="block text-[13px] font-medium text-[#8888a0]">Nome completo</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#555568]" />
+                <input
+                  type="text"
+                  required={isSignup}
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="João Victor"
+                  disabled={loading}
+                  className="w-full bg-transparent border border-[#1e1e2e] rounded-md pl-9 pr-3 py-2 text-sm text-white placeholder-[#555568] focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition disabled:opacity-50"
+                />
               </div>
-              <Link to="/landing" className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition flex items-center gap-1">
-                <span>Página de Vendas</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
             </div>
+          )}
 
-            {/* Alternador de Abas (Entrar / Criar Conta) */}
-            <div className="flex bg-slate-950/70 p-1 rounded-xl border border-slate-800 mb-8">
-              <button
-                type="button"
-                onClick={() => { setIsSignup(false); setError(''); setSuccessMsg(''); }}
-                className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${!isSignup
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-                  : 'text-slate-400 hover:text-slate-200'
-                  }`}
-              >
-                Entrar na Conta
-              </button>
-              <button
-                type="button"
-                onClick={() => { setIsSignup(true); setError(''); setSuccessMsg(''); }}
-                className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${isSignup
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-                  : 'text-slate-400 hover:text-slate-200'
-                  }`}
-              >
-                Criar Nova Conta
-              </button>
-            </div>
-
-            {/* Título da Seção */}
-            <div className="mb-6">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                {isSignup ? 'Criar sua conta profissional' : 'Acessar a plataforma'}
-              </h1>
-              <p className="text-sm text-slate-400 mt-1.5">
-                {isSignup
-                  ? 'Cadastre-se para gerar e gerenciar propostas comerciais com facilidade.'
-                  : 'Insira suas credenciais corporativas para acessar o painel.'}
-              </p>
-            </div>
-
-            {/* Alertas de Erro e Sucesso */}
-            {error && (
-              <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-start gap-3 text-red-400 text-sm animate-in fade-in duration-150">
-                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-red-400" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            {successMsg && (
-              <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-3 text-emerald-400 text-sm animate-in fade-in duration-150">
-                <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5 text-emerald-400" />
-                <span>{successMsg}</span>
-              </div>
-            )}
-
-            {/* Formulário */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {isSignup && (
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                    Nome Completo
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <input
-                      type="text"
-                      required={isSignup}
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Ex: João Victor"
-                      disabled={loading}
-                      className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition disabled:opacity-50"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Endereço de E-mail
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seu@empresa.com"
-                    disabled={loading}
-                    className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition disabled:opacity-50"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Senha
-                  </label>
-                  {!isSignup && (
-                    <Link to="/forgot-password" className="text-xs text-blue-400 hover:text-blue-300 transition font-medium">
-                      Esqueceu a senha?
-                    </Link>
-                  )}
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    disabled={loading}
-                    className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition disabled:opacity-50"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Botão de Envio */}
-              <button
-                type="submit"
+          <div className="space-y-1.5">
+            <label className="block text-[13px] font-medium text-[#8888a0]">E-mail</label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#555568]" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@empresa.com"
                 disabled={loading}
-                className="w-full mt-2 py-3 px-6 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-500 transition duration-200 shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
+                className="w-full bg-transparent border border-[#1e1e2e] rounded-md pl-9 pr-3 py-2 text-sm text-white placeholder-[#555568] focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition disabled:opacity-50"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="block text-[13px] font-medium text-[#8888a0]">Senha</label>
+              {!isSignup && (
+                <Link to="/forgot-password" className="text-[12px] text-blue-400 hover:text-blue-300 transition font-medium">
+                  Esqueceu a senha?
+                </Link>
+              )}
+            </div>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#555568]" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                disabled={loading}
+                className="w-full bg-transparent border border-[#1e1e2e] rounded-md pl-9 pr-9 py-2 text-sm text-white placeholder-[#555568] focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition disabled:opacity-50"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#555568] hover:text-[#8888a0] transition"
               >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-white" />
-                    <span>Autenticando...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>{isSignup ? 'Criar Conta' : 'Acessar Conta'}</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </>
-                )}
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
-            </form>
-
-
+            </div>
           </div>
 
-          {/* Rodapé */}
-          <div className="mt-8 text-center text-xs text-slate-500">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-1 py-2 rounded-md font-medium text-sm text-white bg-blue-600 hover:bg-blue-700 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Autenticando...</span>
+              </>
+            ) : (
+              <>
+                <span>{isSignup ? 'Criar conta' : 'Entrar'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Footer links */}
+        <div className="text-center space-y-3">
+          <p className="text-[12px] text-[#555568]">
             Ao continuar, você concorda com nossos Termos de Serviço e Política de Privacidade.
-          </div>
+          </p>
+          <Link to="/landing" className="text-[13px] font-medium text-[#8888a0] hover:text-white transition inline-flex items-center gap-1">
+            <span>Conhecer a plataforma</span>
+            <ArrowRight className="w-3 h-3" />
+          </Link>
         </div>
-
-        {/* =========================================================== */}
-        {/* COLUNA DIREITA - PAINEL SHOWCASE CORPORATIVO (DESKTOP)      */}
-        {/* =========================================================== */}
-        <div className="hidden lg:flex lg:col-span-6 bg-slate-950/90 p-12 flex-col justify-between relative overflow-hidden border-l border-slate-800/80">
-
-          {/* Brilho decorativo sutil */}
-          <div className="absolute top-0 right-0 w-72 h-72 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
-
-          {/* Topo Showcase */}
-          <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold mb-6">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>Gestão Comercial Inteligente</span>
-            </div>
-
-            <h2 className="text-3xl font-extrabold text-white leading-tight mb-4">
-              Agilidade e precisão para suas <br />
-              <span className="text-blue-400">
-                propostas e contratos.
-              </span>
-            </h2>
-
-            <p className="text-slate-400 text-sm leading-relaxed max-w-md">
-              Centralize a criação de propostas, formalização de contratos e controle de clientes em um ambiente seguro e de alta performance.
-            </p>
-          </div>
-
-          {/* Recurso Corporativo */}
-          <div className="relative z-10 space-y-4 my-8">
-            <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-start gap-4">
-              <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-400 shrink-0">
-                <FileText className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white">Geração Ágil de Documentos</h4>
-                <p className="text-xs text-slate-400 mt-0.5">Padronização de propostas comerciais e contratos com cálculo automatizado de valores.</p>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-start gap-4">
-              <div className="p-2.5 rounded-lg bg-indigo-500/10 text-indigo-400 shrink-0">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white">Infraestrutura Segura</h4>
-                <p className="text-xs text-slate-400 mt-0.5">Armazenamento isolado no banco de dados MariaDB com encriptação e autenticação JWT.</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Widget de Estatísticas */}
-          <div className="relative z-10 pt-6 border-t border-slate-800/80 flex items-center justify-between text-slate-400 text-xs">
-            <div>
-              <span className="block text-xl font-bold text-white">100%</span>
-              <span>Seguro e Privado</span>
-            </div>
-            <div className="h-8 w-px bg-slate-800" />
-            <div>
-              <span className="block text-xl font-bold text-white">99.9%</span>
-              <span>Disponibilidade</span>
-            </div>
-            <div className="h-8 w-px bg-slate-800" />
-            <div>
-              <span className="block text-xl font-bold text-white">B2B</span>
-              <span>SaaS Profissional</span>
-            </div>
-          </div>
-
-        </div>
-
       </div>
     </div>
   );
