@@ -20,6 +20,7 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'proposta_facil_super_secret_jwt_key_2026';
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const GOOGLE_API_KEY = process.env.VITE_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY;
 const WEBHOOK_URL = process.env.VITE_WEBHOOK_URL || process.env.WEBHOOK_URL || 'https://vm-n8n.xyrugy.easypanel.host/webhook/03a174c4-2ad0-426a-8c98-22685b7e85d1';
 
@@ -75,7 +76,7 @@ app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/signup', authLimiter);
 
 // -------------------------------------------------------------
-// MIDDLEWARE DE AUTENTICAÇÃO JWT (Suporta Cookie HttpOnly e Header)
+// MIDDLEWARE DE AUTENTICAÇÃO JWT
 // -------------------------------------------------------------
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -108,7 +109,7 @@ const getCookieOptions = () => ({
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax',
-  maxAge: 7 * 24 * 60 * 60 * 1000 // 7 dias
+  maxAge: 7 * 24 * 60 * 60 * 1000
 });
 
 // ==========================================
@@ -236,10 +237,10 @@ app.post('/api/auth/update-password', authenticateToken, async (req, res) => {
 });
 
 // ==========================================
-// ROTAS DE IA SEBURAS (PROXIES PRIVADOS)
+// ROTAS DE IA SEGURAS (OPENAI + GEMINI)
 // ==========================================
 
-// 1. Proxy Seguro para Preenchimento com Google Gemini IA
+// 1. Proxy Seguro para Preenchimento com OpenAI (ou Fallback Gemini)
 app.post('/api/ai/fill-proposal', authenticateToken, async (req, res) => {
   try {
     const { input, type = 'proposta' } = req.body;
@@ -247,17 +248,10 @@ app.post('/api/ai/fill-proposal', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Descreva o pedido para a IA.' });
     }
 
-    if (!GOOGLE_API_KEY) {
-      return res.status(500).json({ error: 'Serviço de IA não configurado no servidor (GOOGLE_API_KEY ausente).' });
-    }
-
-    const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-    let systemInstruction = `
+    const systemInstruction = `
       Você é um assistente especialista em criar propostas comerciais.
       Sua tarefa é ler o pedido do usuário e retornar APENAS um objeto JSON válido.
-      NÃO use markdown (\`\`\`json). NÃO escreva explicações.
+      NÃO use markdown (\`\`\`json). NÃO escreva explicações fora do JSON.
       
       Estrutura obrigatória do JSON:
       {
@@ -274,15 +268,54 @@ app.post('/api/ai/fill-proposal', authenticateToken, async (req, res) => {
       }
     `;
 
-    const fullPrompt = `${systemInstruction}\n\nPedido do usuário: "${input}"`;
-    const result = await model.generateContent(fullPrompt);
-    const response = await result.response;
-    let text = response.text();
+    // 🟢 OPÇÃO 1: OpenAI ChatGPT (Recomendado se OPENAI_API_KEY estiver configurada)
+    if (OPENAI_API_KEY) {
+      const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemInstruction },
+            { role: 'user', content: input }
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.3
+        })
+      });
 
-    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    const jsonData = JSON.parse(text);
+      if (!openaiRes.ok) {
+        const errData = await openaiRes.json().catch(() => ({}));
+        throw new Error(errData.error?.message || `Erro na OpenAI API (HTTP ${openaiRes.status})`);
+      }
 
-    return res.json(jsonData);
+      const openaiData = await openaiRes.json();
+      const rawContent = openaiData.choices[0]?.message?.content;
+      const jsonData = JSON.parse(rawContent);
+
+      return res.json(jsonData);
+    }
+
+    // 🔵 OPÇÃO 2: Google Gemini (Fallback)
+    if (GOOGLE_API_KEY) {
+      const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const fullPrompt = `${systemInstruction}\n\nPedido do usuário: "${input}"`;
+
+      const result = await model.generateContent(fullPrompt);
+      const response = await result.response;
+      let text = response.text();
+
+      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      const jsonData = JSON.parse(text);
+
+      return res.json(jsonData);
+    }
+
+    return res.status(500).json({ error: 'Nenhuma chave de API de IA (OPENAI_API_KEY ou GOOGLE_API_KEY) configurada no servidor.' });
   } catch (error) {
     return handleServerError(res, error, 'Erro ao processar preenchimento com IA.');
   }
@@ -306,7 +339,6 @@ app.post('/api/ai/chat', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: `Você atingiu o limite mensal de ${maxLimit} mensagens do seu plano.` });
     }
 
-    // Chama o Webhook n8n de forma privada pelo backend
     const webhookResponse = await fetch(WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -320,7 +352,6 @@ app.post('/api/ai/chat', authenticateToken, async (req, res) => {
     const data = await webhookResponse.json();
     const aiReply = data.output || data.reply || data.message || data.text || 'Resposta processada.';
 
-    // Incrementa contagem de mensagens de IA no banco
     await pool.query('UPDATE assinaturas SET mensagens_ia_mes = mensagens_ia_mes + 1 WHERE user_id = ?', [req.user.id]);
 
     return res.json({ reply: aiReply });
