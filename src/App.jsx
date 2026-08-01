@@ -29,6 +29,10 @@ import EditarContrato from './pages/EditarContrato';
 import ChatIA from './pages/ChatIA';
 import Planos from './pages/Planos';
 import Configuracoes from './pages/Configuracoes';
+import CRM from './pages/CRM';
+import Clientes from './pages/Clientes';
+import Templates from './pages/Templates';
+import Automacoes from './pages/Automacoes';
 // O BLOCO DE TESTE FOI MOVIDO DAQUI...
 
 // const queryClient = new QueryClient({
@@ -302,6 +306,10 @@ function App() {
             {/* Rotas Protegidas (envolvidas pelo ProtectedRoute que inclui o Layout) */}
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Home />} />
+              <Route path="/crm" element={<CRM />} />
+              <Route path="/clientes" element={<Clientes />} />
+              <Route path="/templates" element={<Templates />} />
+              <Route path="/automacoes" element={<Automacoes />} />
               <Route path="/planos" element={<Planos />} />
               <Route path="/chat-ia" element={<ChatIA />} />
               <Route path="/propostas" element={<Propostas />} />
