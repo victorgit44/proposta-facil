@@ -57,6 +57,11 @@ export async function initDb() {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
 
+      // Migrações seguras de colunas para aceite digital de propostas
+      try { await connection.query('ALTER TABLE propostas ADD COLUMN aceite_nome VARCHAR(255) NULL'); } catch (e) {}
+      try { await connection.query('ALTER TABLE propostas ADD COLUMN aceite_ip VARCHAR(100) NULL'); } catch (e) {}
+      try { await connection.query('ALTER TABLE propostas ADD COLUMN aceite_data DATETIME NULL'); } catch (e) {}
+
       // 4. Tabela contratos
       await connection.query(`
         CREATE TABLE IF NOT EXISTS contratos (

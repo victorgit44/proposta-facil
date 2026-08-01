@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FileText, Sparkles, ShieldCheck, TrendingUp, Zap, Check, ArrowRight, 
-  ChevronDown, Clock, BarChart3, Lock, Users, Star, CheckCircle2, 
+import {
+  FileText, Sparkles, ShieldCheck, TrendingUp, Zap, Check, ArrowRight,
+  ChevronDown, Clock, BarChart3, Lock, Users, Star, CheckCircle2,
   HelpCircle, Eye, RefreshCw, Send, Layers, Building2, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -134,9 +134,9 @@ export default function LandingPage() {
       {/* ------------------------------------------------------------- */}
       <section className="relative pt-16 pb-24 md:pt-24 md:pb-32 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
-          
+
           {/* Top Badge */}
-          <motion.div
+          {/*<motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -145,6 +145,7 @@ export default function LandingPage() {
             <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
             <span>Plataforma Inteligente de Vendas B2B</span>
           </motion.div>
+          */}
 
           {/* Headline Principal */}
           <motion.h1
@@ -264,7 +265,7 @@ export default function LandingPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          
+
           {/* Card 1: IA Assistente */}
           <div className="p-8 rounded-3xl bg-slate-900/80 border border-slate-800 hover:border-blue-500/40 transition duration-300 flex flex-col justify-between space-y-6 group">
             <div className="space-y-4">
@@ -407,7 +408,7 @@ export default function LandingPage() {
           <div className="text-center space-y-4 max-w-3xl mx-auto">
             <h2 className="text-xs font-extrabold uppercase tracking-widest text-blue-400">Investimento Transparente</h2>
             <p className="text-3xl sm:text-5xl font-black tracking-tight text-white">Planos que Cabem no Seu Negócio</p>
-            
+
             {/* Cycle Toggle */}
             <div className="pt-4 flex items-center justify-center gap-4">
               <span className={`text-xs font-bold ${billingCycle === 'monthly' ? 'text-white' : 'text-slate-400'}`}>Mensal</span>
@@ -425,7 +426,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            
+
             {/* Plano Grátis */}
             <div className="p-8 rounded-3xl bg-slate-950 border border-slate-800 space-y-6 flex flex-col justify-between">
               <div className="space-y-4">

@@ -38,9 +38,10 @@ export default function VisualizarProposta() {
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
+    const publicUrl = `${window.location.origin}/p/${id}`;
+    navigator.clipboard.writeText(publicUrl);
     setCopied(true);
-    toast.success('Link da proposta copiado para a área de transferência!');
+    toast.success('Link público de aceite copiado para a área de transferência!');
     setTimeout(() => setCopied(false), 2000);
   };
 

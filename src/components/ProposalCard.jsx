@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, Edit2, Trash2, Calendar, Clock, ArrowUpRight, CheckCircle2, AlertCircle, FileText } from 'lucide-react';
+import { Eye, Edit2, Trash2, Calendar, Clock, ArrowUpRight, CheckCircle2, AlertCircle, FileText, Share2 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import { toast } from 'sonner';
 
 const getStatusBadge = (status) => {
   switch (status?.toLowerCase()) {
@@ -105,6 +106,18 @@ export function ProposalCard({ proposta, onExcluir }) {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              const publicUrl = `${window.location.origin}/p/${id}`;
+              navigator.clipboard.writeText(publicUrl);
+              toast.success('Link público de aceite copiado!');
+            }}
+            className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-xl transition duration-200 cursor-pointer"
+            title="Copiar link público de aceite"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+          </button>
+
           <Link
             to={`/propostas/ver/${id}`}
             className="flex items-center gap-1.5 text-xs font-bold text-slate-200 bg-slate-800 hover:bg-blue-600 hover:text-white px-3 py-2 rounded-xl transition duration-200"

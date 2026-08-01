@@ -409,8 +409,96 @@ app.post('/api/ai/chat', authenticateToken, async (req, res) => {
 });
 
 // ==========================================
-// ROTAS DE PROPOSTAS
+// ROTAS DE PROPOSTAS (PÚBLICAS & AUTENTICADAS)
 // ==========================================
+
+// Rota pública para visualização de proposta por clientes (Sem necessidade de login)
+app.get('/api/propostas/public/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, user_id, numero_proposta, nome_cliente, email_cliente, telefone_cliente, empresa_cliente, servico_prestado, prazo_entrega, observacoes, status, validade, itens, valor_total, aceite_nome, aceite_ip, aceite_data, created_date FROM propostas WHERE id = ?',
+      [req.params.id]
+    );
+
+    if (rows.length === 0) return res.status(404).json({ error: 'Proposta não encontrada.' });
+
+    const proposta = rows[0];
+    proposta.itens = typeof proposta.itens === 'string' ? JSON.parse(proposta.itens || '[]') : (proposta.itens || []);
+
+    // Buscar dados públicos da empresa remetente para exibir a logomarca e informações comerciais
+    const [configRows] = await pool.query(
+      'SELECT nome_empresa, cnpj, telefone, email, logo_url FROM configuracoes WHERE user_id = ?',
+      [proposta.user_id]
+    );
+
+    const empresa = configRows[0] || {};
+    delete proposta.user_id; // Remove user_id da resposta pública por segurança
+
+    return res.json({
+      ...proposta,
+      empresa: {
+        nome: empresa.nome_empresa || 'Empresa Prestadora',
+        cnpj: empresa.cnpj || '',
+        telefone: empresa.telefone || '',
+        email: empresa.email || '',
+        logo_url: empresa.logo_url || ''
+      }
+    });
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao carregar proposta pública.');
+  }
+});
+
+// Rota pública para aceite digital da proposta
+app.post('/api/propostas/public/:id/accept', async (req, res) => {
+  try {
+    const { nome_assinante } = req.body;
+    if (!nome_assinante || typeof nome_assinante !== 'string' || !nome_assinante.trim()) {
+      return res.status(400).json({ error: 'Por favor, informe o seu nome completo para confirmar o aceite da proposta.' });
+    }
+
+    const [rows] = await pool.query('SELECT id, status FROM propostas WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Proposta não encontrada.' });
+
+    const clientIp = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+    const now = new Date();
+
+    await pool.query(
+      'UPDATE propostas SET status = ?, aceite_nome = ?, aceite_ip = ?, aceite_data = ? WHERE id = ?',
+      ['aprovada', nome_assinante.trim(), clientIp, now, req.params.id]
+    );
+
+    return res.json({
+      success: true,
+      message: 'Proposta aceita com sucesso!',
+      aceite: {
+        nome: nome_assinante.trim(),
+        ip: clientIp,
+        data: now
+      }
+    });
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao registrar aceite da proposta.');
+  }
+});
+
+// Rota pública para solicitação de ajuste ou recusa da proposta
+app.post('/api/propostas/public/:id/reject', async (req, res) => {
+  try {
+    const { motivo } = req.body;
+    const [rows] = await pool.query('SELECT id FROM propostas WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Proposta não encontrada.' });
+
+    await pool.query(
+      'UPDATE propostas SET status = ?, observacoes = CONCAT(COALESCE(observacoes, ""), "\n[Solicitação de Ajuste do Cliente]: ", ?) WHERE id = ?',
+      ['recusada', (motivo || 'Solicitação de ajustes enviada pelo cliente.').trim(), req.params.id]
+    );
+
+    return res.json({ success: true, message: 'Solicitação enviada com sucesso ao vendedor.' });
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao registrar solicitação.');
+  }
+});
 
 app.get('/api/propostas', authenticateToken, async (req, res) => {
   try {

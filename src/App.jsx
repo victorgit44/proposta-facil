@@ -13,6 +13,7 @@ import UpdatePasswordPage from './pages/UpdatePasswordPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 // import SignupPage from './pages/SignupPage'; // Descomente quando tiver
 import LandingPage from './pages/LandingPage';
+import VisualizarPropostaPublica from './pages/VisualizarPropostaPublica';
 import ProtectedRoute from './components/ProtectedRoute'; // Nosso guardião de rotas
 
 // Páginas Protegidas (serão renderizadas pelo Outlet dentro do ProtectedRoute/Layout)
@@ -290,6 +291,7 @@ function App() {
         <BrowserRouter>
           <Routes>
             {/* Rotas Públicas */}
+            <Route path="/p/:id" element={<VisualizarPropostaPublica />} />
             <Route path="/landing" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
