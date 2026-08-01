@@ -339,18 +339,66 @@ app.post('/api/ai/chat', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: `Você atingiu o limite mensal de ${maxLimit} mensagens do seu plano.` });
     }
 
-    const webhookResponse = await fetch(WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, history }),
-    });
+    let aiReply = '';
 
-    if (!webhookResponse.ok) {
-      throw new Error(`Serviço de IA indisponível (HTTP ${webhookResponse.status}).`);
+    try {
+      const webhookResponse = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, history }),
+      });
+
+      if (webhookResponse.ok) {
+        const rawText = await webhookResponse.text();
+        if (rawText && rawText.trim()) {
+          try {
+            const data = JSON.parse(rawText);
+            aiReply = data.output || data.reply || data.message || data.text || (typeof data === 'string' ? data : '');
+          } catch (e) {
+            aiReply = rawText.trim();
+          }
+        }
+      }
+    } catch (n8nErr) {
+      console.warn('⚠️ Webhook n8n indisponível, usando fallback para OpenAI:', n8nErr.message);
     }
 
-    const data = await webhookResponse.json();
-    const aiReply = data.output || data.reply || data.message || data.text || 'Resposta processada.';
+    // 🟢 FALLBACK AUTOMÁTICO PARA OPENAI (Caso n8n responda vazio ou esteja sem o nó 'Respond to Webhook')
+    if (!aiReply && OPENAI_API_KEY) {
+      try {
+        const formattedHistory = Array.isArray(history) 
+          ? history.map(h => ({ role: h.role === 'assistant' ? 'assistant' : 'user', content: h.content || '' }))
+          : [];
+
+        const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${OPENAI_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: 'Você é um assistente virtual especialista em propostas comerciais e contratos para a plataforma PropostaFácil. Responda de forma cortês, objetiva e vendedora em Português do Brasil.' },
+              ...formattedHistory,
+              { role: 'user', content: message }
+            ],
+            temperature: 0.7
+          })
+        });
+
+        if (openaiRes.ok) {
+          const openaiData = await openaiRes.json();
+          aiReply = openaiData.choices[0]?.message?.content || '';
+        }
+      } catch (openAiErr) {
+        console.error('Erro no fallback da OpenAI:', openAiErr);
+      }
+    }
+
+    if (!aiReply) {
+      aiReply = 'Desculpe, não consegui obter uma resposta no momento. Por favor, tente novamente em instantes.';
+    }
 
     await pool.query('UPDATE assinaturas SET mensagens_ia_mes = mensagens_ia_mes + 1 WHERE user_id = ?', [req.user.id]);
 
