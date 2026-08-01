@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, FileText, ShieldCheck, Layers, ArrowRight, Loader2, AlertCircle, CheckCircle2, UserCheck, TrendingUp } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, FileText, ShieldCheck, Layers, ArrowRight, Loader2, AlertCircle, CheckCircle2, TrendingUp } from 'lucide-react';
 import { supabase } from '@/api/supabaseClient';
 
 export default function LoginPage() {
@@ -13,13 +13,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-
-  // Preenchimento rápido para o Admin de Testes
-  const handleQuickAdminLogin = () => {
-    setEmail('admin@propostafacil.com');
-    setPassword('admin123');
-    setError('');
-  };
 
   // Processar Login ou Cadastro
   const handleSubmit = async (e) => {
@@ -81,7 +74,7 @@ export default function LoginPage() {
       {/* CONTAINER PRINCIPAL SPLIT SCREEN CORPORATIVO                  */}
       {/* ------------------------------------------------------------- */}
       <div className="relative w-full max-w-5xl grid lg:grid-cols-12 rounded-3xl bg-slate-900/80 border border-slate-800/90 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden z-10">
-        
+
         {/* =========================================================== */}
         {/* COLUNA ESQUERDA - FORMULÁRIO DE AUTENTICAÇÃO CORPORATIVO    */}
         {/* =========================================================== */}
@@ -111,22 +104,20 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => { setIsSignup(false); setError(''); setSuccessMsg(''); }}
-                className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${
-                  !isSignup 
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' 
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
+                className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${!isSignup
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                  : 'text-slate-400 hover:text-slate-200'
+                  }`}
               >
                 Entrar na Conta
               </button>
               <button
                 type="button"
                 onClick={() => { setIsSignup(true); setError(''); setSuccessMsg(''); }}
-                className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${
-                  isSignup 
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' 
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
+                className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${isSignup
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                  : 'text-slate-400 hover:text-slate-200'
+                  }`}
               >
                 Criar Nova Conta
               </button>
@@ -138,8 +129,8 @@ export default function LoginPage() {
                 {isSignup ? 'Criar sua conta profissional' : 'Acessar a plataforma'}
               </h1>
               <p className="text-sm text-slate-400 mt-1.5">
-                {isSignup 
-                  ? 'Cadastre-se para gerar e gerenciar propostas comerciais com facilidade.' 
+                {isSignup
+                  ? 'Cadastre-se para gerar e gerenciar propostas comerciais com facilidade.'
                   : 'Insira suas credenciais corporativas para acessar o painel.'}
               </p>
             </div>
@@ -251,19 +242,7 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* Acesso Rápido Admin para Testes */}
-            {!isSignup && (
-              <div className="mt-6 pt-5 border-t border-slate-800/80 flex flex-col items-center">
-                <button
-                  type="button"
-                  onClick={handleQuickAdminLogin}
-                  className="px-3.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 text-slate-300 text-xs font-medium transition flex items-center gap-2 cursor-pointer"
-                >
-                  <UserCheck className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Preencher dados de acesso Demo (Admin)</span>
-                </button>
-              </div>
-            )}
+
           </div>
 
           {/* Rodapé */}
@@ -276,7 +255,7 @@ export default function LoginPage() {
         {/* COLUNA DIREITA - PAINEL SHOWCASE CORPORATIVO (DESKTOP)      */}
         {/* =========================================================== */}
         <div className="hidden lg:flex lg:col-span-6 bg-slate-950/90 p-12 flex-col justify-between relative overflow-hidden border-l border-slate-800/80">
-          
+
           {/* Brilho decorativo sutil */}
           <div className="absolute top-0 right-0 w-72 h-72 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -286,14 +265,14 @@ export default function LoginPage() {
               <TrendingUp className="w-3.5 h-3.5" />
               <span>Gestão Comercial Inteligente</span>
             </div>
-            
+
             <h2 className="text-3xl font-extrabold text-white leading-tight mb-4">
               Agilidade e precisão para suas <br />
               <span className="text-blue-400">
                 propostas e contratos.
               </span>
             </h2>
-            
+
             <p className="text-slate-400 text-sm leading-relaxed max-w-md">
               Centralize a criação de propostas, formalização de contratos e controle de clientes em um ambiente seguro e de alta performance.
             </p>
