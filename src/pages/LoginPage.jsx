@@ -135,6 +135,10 @@ export default function LoginPage() {
                   </span>
                 </div>
               </div>
+              <Link to="/landing" className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition flex items-center gap-1">
+                <span>Página de Vendas</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
 
             {/* Alternador de Abas (Entrar / Criar Conta) */}
