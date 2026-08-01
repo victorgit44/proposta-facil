@@ -14,9 +14,10 @@ const dbPassword = process.env.DB_PASSWORD;
 const dbName = process.env.DB_NAME;
 
 if (!dbHost || !dbUser || !dbPassword || !dbName) {
-  console.warn('⚠️ ATENÇÃO: Uma ou mais variáveis de ambiente do banco de dados (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME) não foram definidas no arquivo .env ou variáveis de sistema.');
+  console.warn('⚠️ ATENÇÃO: Uma ou mais variáveis de ambiente do banco de dados (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME) não foram definidas.');
 }
 
+// Pool de Conexões MariaDB Otimizado contra Desconexão (ECONNRESET)
 const pool = mysql.createPool({
   host: dbHost,
   port: parseInt(process.env.DB_PORT || '3306', 10),
@@ -25,7 +26,30 @@ const pool = mysql.createPool({
   database: dbName,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  maxIdle: 10,               // Descarta sockets ociosos excedentes
+  idleTimeout: 30000,        // Fecha conexões inativas após 30 segundos
+  queueLimit: 0,
+  enableKeepAlive: true,     // Envia pacotes TCP Keep-Alive
+  keepAliveInitialDelay: 10000 // Inicia o ping TCP após 10 segundos
 });
+
+// Resiliência Automática: Intercepta e Tenta Novamente em caso de ECONNRESET / Desconexão
+const rawQuery = pool.query.bind(pool);
+pool.query = async function (...args) {
+  try {
+    return await rawQuery(...args);
+  } catch (err) {
+    if (
+      err.code === 'ECONNRESET' ||
+      err.code === 'PROTOCOL_CONNECTION_LOST' ||
+      err.code === 'ETIMEDOUT' ||
+      err.message?.includes('read ECONNRESET')
+    ) {
+      console.warn('⚠️ Conexão MariaDB resetada pela VPS (ECONNRESET). Reconectando automaticamente...');
+      return await rawQuery(...args);
+    }
+    throw err;
+  }
+};
 
 export default pool;

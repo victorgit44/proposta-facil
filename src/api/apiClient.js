@@ -45,32 +45,40 @@ export async function fetchApi(endpoint, options = {}) {
 // -------------------------------------------------------------
 export const authClient = {
   signInWithPassword: async ({ email, password }) => {
-    const data = await fetchApi('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const data = await fetchApi('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (data.token) {
-      localStorage.setItem('token', data.token);
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+      notifyAuthListeners('SIGNED_IN', { user: data.user });
+
+      return { data: { user: data.user, session: { user: data.user } }, error: null };
+    } catch (err) {
+      return { data: { user: null, session: null }, error: err };
     }
-    notifyAuthListeners('SIGNED_IN', { user: data.user });
-
-    return { data, error: null };
   },
 
   signUp: async ({ email, password, options = {} }) => {
-    const full_name = options.data?.full_name || email.split('@')[0];
-    const data = await fetchApi('/api/auth/signup', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, full_name }),
-    });
+    try {
+      const full_name = options.data?.full_name || email.split('@')[0];
+      const data = await fetchApi('/api/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify({ email, password, full_name }),
+      });
 
-    if (data.token) {
-      localStorage.setItem('token', data.token);
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+      notifyAuthListeners('SIGNED_IN', { user: data.user });
+
+      return { data: { user: data.user, session: { user: data.user } }, error: null };
+    } catch (err) {
+      return { data: { user: null, session: null }, error: err };
     }
-    notifyAuthListeners('SIGNED_IN', { user: data.user });
-
-    return { data, error: null };
   },
 
   signOut: async () => {
@@ -85,12 +93,16 @@ export const authClient = {
   },
 
   getSession: async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return { data: { session: null }, error: null };
+    }
     try {
       const data = await fetchApi('/api/auth/me');
       return { data: { session: { user: data.user } }, error: null };
     } catch (err) {
       localStorage.removeItem('token');
-      return { data: { session: null }, error: err };
+      return { data: { session: null }, error: null };
     }
   },
 
