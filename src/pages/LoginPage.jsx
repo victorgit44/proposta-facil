@@ -43,7 +43,6 @@ export default function LoginPage() {
         throw signInError; // Joga o erro para o catch
       }
 
-      console.log('Login bem-sucedido:', data);
       navigate('/'); // Redireciona para o Dashboard após login
 
     } catch (err) {

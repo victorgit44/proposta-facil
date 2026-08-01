@@ -14,7 +14,6 @@ export const AuthProvider = ({ children }) => {
     // onAuthStateChange dispara imediatamente na carga inicial e em login/logout
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth Event (Context):', event); // Log para depuração
         const currentUser = session?.user ?? null;
         setUser(currentUser); // Define o usuário (ou null se deslogado)
         setLoading(false); // Marca que o carregamento do *usuário* terminou

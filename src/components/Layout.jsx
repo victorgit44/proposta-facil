@@ -10,7 +10,6 @@ export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
   const { user, signOut } = useAuth(); // <-- 2. CHAME useAuth
-  console.log('ID DO USUÁRIO ATUAL:', user?.id);
   const menuItems = [
     { path: '/', icon: Home, label: 'Início' },
     { path: '/propostas', icon: FileText, label: 'Propostas' },
@@ -27,7 +26,6 @@ export default function Layout({ children }) {
     try {
       await signOut();
       // O ProtectedRoute cuidará do redirecionamento
-      console.log('Logout realizado.');
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
       alert('Erro ao sair: ' + error.message); // Informa o usuário
