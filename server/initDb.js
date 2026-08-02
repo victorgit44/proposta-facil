@@ -1,4 +1,5 @@
 import pool from './db.js';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 export async function initDb() {
@@ -62,6 +63,18 @@ export async function initDb() {
       try { await connection.query('ALTER TABLE propostas ADD COLUMN aceite_ip VARCHAR(100) NULL'); } catch (e) {}
       try { await connection.query('ALTER TABLE propostas ADD COLUMN aceite_data DATETIME NULL'); } catch (e) {}
       try { await connection.query('ALTER TABLE propostas ADD COLUMN canvas_data LONGTEXT NULL'); } catch (e) {}
+
+      // Migração: public_token UUID para URLs públicas seguras (anti-IDOR)
+      try { await connection.query('ALTER TABLE propostas ADD COLUMN public_token VARCHAR(36) NULL'); } catch (e) {}
+      try { await connection.query('CREATE UNIQUE INDEX idx_public_token ON propostas (public_token)'); } catch (e) {}
+      // Povoar public_token em propostas existentes que ainda não possuem
+      try {
+        const [rows] = await connection.query('SELECT id FROM propostas WHERE public_token IS NULL');
+        for (const row of rows) {
+          const uuid = crypto.randomUUID();
+          await connection.query('UPDATE propostas SET public_token = ? WHERE id = ?', [uuid, row.id]);
+        }
+      } catch (e) {}
 
       // 4. Tabela contratos
       await connection.query(`

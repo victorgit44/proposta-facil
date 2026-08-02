@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
 import dotenv from 'dotenv';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,28 +18,48 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
+// -------------------------------------------------------------
+// SEGURANÇA: VALIDAÇÃO OBRIGATÓRIA DE VARIÁVEIS DE AMBIENTE
+// -------------------------------------------------------------
+if (!process.env.JWT_SECRET) {
+  console.error('❌ ERRO FATAL: JWT_SECRET não definido nas variáveis de ambiente. O servidor NÃO pode iniciar sem essa configuração.');
+  process.exit(1);
+}
+
 const app = express();
 const PORT = process.env.PORT || process.env.SERVER_PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'proposta_facil_super_secret_jwt_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const GOOGLE_API_KEY = process.env.VITE_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY;
-const WEBHOOK_URL = process.env.VITE_WEBHOOK_URL || process.env.WEBHOOK_URL || 'https://vm-n8n.xyrugy.easypanel.host/webhook/03a174c4-2ad0-426a-8c98-22685b7e85d1';
+const WEBHOOK_URL = process.env.VITE_WEBHOOK_URL || process.env.WEBHOOK_URL;
 
-if (!process.env.JWT_SECRET) {
-  console.warn('⚠️ AVISO DE SEGURANÇA: JWT_SECRET não definido nas variáveis de ambiente. Usando segredo temporário.');
+if (!WEBHOOK_URL) {
+  console.warn('⚠️ AVISO: WEBHOOK_URL (n8n) não configurado. O chat IA via webhook estará indisponível.');
 }
 
 // -------------------------------------------------------------
 // SEGURANÇA: HELMET, COOKIES & CORS
 // -------------------------------------------------------------
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      connectSrc: ["'self'", "https://api.openai.com", "https://generativelanguage.googleapis.com"],
+    },
+  },
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
 app.use(cookieParser());
 
 const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(s => s.trim()) : null;
+if (!allowedOrigins && process.env.NODE_ENV === 'production') {
+  console.warn('⚠️ AVISO DE SEGURANÇA: CORS_ORIGIN não definido em produção. Qualquer origem será aceita.');
+}
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || !allowedOrigins || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
@@ -75,6 +96,16 @@ app.use('/api/', apiLimiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/signup', authLimiter);
 
+// Rate limiting rigoroso para rotas públicas de propostas (anti-scraping/spam)
+const publicLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: { error: 'Muitas requisições. Tente novamente em alguns minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/propostas/public/', publicLimiter);
+
 // -------------------------------------------------------------
 // MIDDLEWARE DE AUTENTICAÇÃO JWT
 // -------------------------------------------------------------
@@ -97,11 +128,16 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// Helper de erro seguro
+// Helper de erro seguro — NUNCA expor error.message para o cliente
 const handleServerError = (res, error, customMessage = 'Erro interno do servidor.') => {
-  console.error('❌ Erro na API:', error);
-  const message = error.message || customMessage;
-  return res.status(500).json({ error: message });
+  console.error('❌ Erro na API:', error.message || error, error.stack ? `\n${error.stack}` : '');
+  return res.status(500).json({ error: customMessage });
+};
+
+// Helper de log de segurança
+const logSecurityEvent = (event, details = {}) => {
+  const timestamp = new Date().toISOString();
+  console.log(JSON.stringify({ timestamp, event, ...details }));
 };
 
 // Helper de Opções do Cookie de Sessão
@@ -125,8 +161,8 @@ app.post('/api/auth/signup', async (req, res) => {
       return res.status(400).json({ error: 'Email e senha são obrigatórios.' });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'A senha deve ter pelo menos 6 caracteres.' });
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'A senha deve ter pelo menos 8 caracteres.' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
@@ -151,6 +187,8 @@ app.post('/api/auth/signup', async (req, res) => {
     );
 
     const token = jwt.sign({ id: userId, email: cleanEmail, full_name: userName, role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
+
+    logSecurityEvent('SIGNUP_SUCCESS', { userId, email: cleanEmail });
 
     res.cookie('token', token, getCookieOptions());
 
@@ -181,8 +219,11 @@ app.post('/api/auth/login', async (req, res) => {
     const user = users[0];
     const validPassword = await bcrypt.compare(password, user.password_hash);
     if (!validPassword) {
+      logSecurityEvent('LOGIN_FAILED', { email: cleanEmail, reason: 'invalid_password' });
       return res.status(401).json({ error: 'Credenciais inválidas.' });
     }
+
+    logSecurityEvent('LOGIN_SUCCESS', { userId: user.id, email: user.email });
 
     const token = jwt.sign(
       { id: user.id, email: user.email, full_name: user.full_name, role: user.role },
@@ -224,12 +265,15 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 app.post('/api/auth/update-password', authenticateToken, async (req, res) => {
   try {
     const { newPassword } = req.body;
-    if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
-      return res.status(400).json({ error: 'A nova senha deve ter no mínimo 6 caracteres.' });
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+      return res.status(400).json({ error: 'A nova senha deve ter no mínimo 8 caracteres.' });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await pool.query('UPDATE users SET password_hash = ? WHERE id = ?', [hashedPassword, req.user.id]);
+
+    logSecurityEvent('PASSWORD_CHANGED', { userId: req.user.id });
+
     return res.json({ message: 'Senha atualizada com sucesso.' });
   } catch (error) {
     return handleServerError(res, error, 'Erro ao atualizar senha.');
@@ -415,10 +459,12 @@ app.post('/api/ai/chat', authenticateToken, async (req, res) => {
 // Rota pública para visualização de proposta por clientes (Sem necessidade de login)
 app.get('/api/propostas/public/:id', async (req, res) => {
   try {
-    const [rows] = await pool.query(
-      'SELECT * FROM propostas WHERE id = ?',
-      [req.params.id]
-    );
+    // Suporta busca por public_token (UUID) ou id numérico (legado)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(req.params.id);
+    const query = isUUID
+      ? 'SELECT * FROM propostas WHERE public_token = ?'
+      : 'SELECT * FROM propostas WHERE id = ?';
+    const [rows] = await pool.query(query, [req.params.id]);
 
     if (rows.length === 0) return res.status(404).json({ error: 'Proposta não encontrada.' });
 
@@ -430,7 +476,7 @@ app.get('/api/propostas/public/:id', async (req, res) => {
     if (proposta.user_id) {
       try {
         const [configRows] = await pool.query(
-          'SELECT nome_empresa, cnpj, telefone, email, logo_url FROM configuracoes WHERE user_id = ?',
+          'SELECT nome_empresa, cnpj, telefone_empresa AS telefone, email_empresa AS email, logo_url FROM configuracoes_empresa WHERE user_id = ?',
           [proposta.user_id]
         );
         empresa = configRows[0] || {};
@@ -498,77 +544,7 @@ app.post('/api/propostas/public/:id/comentarios', async (req, res) => {
   }
 });
 
-// ==========================================
-// ROTAS DE PRODUTOS & BIBLIOTECA (AUTENTICADAS)
-// ==========================================
 
-app.get('/api/produtos', authenticateToken, async (req, res) => {
-  try {
-    const [rows] = await pool.query('SELECT * FROM produtos WHERE user_id = ? ORDER BY created_at DESC', [req.user.id]);
-    return res.json(rows);
-  } catch (error) {
-    return res.json([]);
-  }
-});
-
-app.post('/api/produtos', authenticateToken, async (req, res) => {
-  try {
-    const { nome, categoria, descricao, preco_unitario } = req.body;
-    if (!nome || !nome.trim()) return res.status(400).json({ error: 'Nome do produto é obrigatório.' });
-
-    const [result] = await pool.query(
-      'INSERT INTO produtos (user_id, nome, categoria, descricao, preco_unitario) VALUES (?, ?, ?, ?, ?)',
-      [req.user.id, nome.trim(), categoria || 'Geral', descricao || '', parseFloat(preco_unitario) || 0.00]
-    );
-
-    return res.json({ id: result.insertId, success: true });
-  } catch (error) {
-    return handleServerError(res, error, 'Erro ao salvar produto.');
-  }
-});
-
-app.delete('/api/produtos/:id', authenticateToken, async (req, res) => {
-  try {
-    await pool.query('DELETE FROM produtos WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
-    return res.json({ success: true });
-  } catch (error) {
-    return handleServerError(res, error, 'Erro ao excluir produto.');
-  }
-});
-
-app.get('/api/biblioteca', authenticateToken, async (req, res) => {
-  try {
-    const [rows] = await pool.query('SELECT * FROM biblioteca_blocos WHERE user_id = ? ORDER BY created_at DESC', [req.user.id]);
-    return res.json(rows);
-  } catch (error) {
-    return res.json([]);
-  }
-});
-
-app.post('/api/biblioteca', authenticateToken, async (req, res) => {
-  try {
-    const { titulo, categoria, conteudo } = req.body;
-    if (!titulo || !conteudo) return res.status(400).json({ error: 'Título e conteúdo são obrigatórios.' });
-
-    const [result] = await pool.query(
-      'INSERT INTO biblioteca_blocos (user_id, titulo, categoria, conteudo) VALUES (?, ?, ?, ?)',
-      [req.user.id, titulo.trim(), categoria || 'servicos', conteudo.trim()]
-    );
-
-    return res.json({ id: result.insertId, success: true });
-  } catch (error) {
-    return handleServerError(res, error, 'Erro ao salvar bloco.');
-  }
-});
-
-app.delete('/api/biblioteca/:id', authenticateToken, async (req, res) => {
-  try {
-    await pool.query('DELETE FROM biblioteca_blocos WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
-    return res.json({ success: true });
-  } catch (error) {
-    return handleServerError(res, error, 'Erro ao excluir bloco.');
-  }
-});
 
 app.get('/api/propostas/:id/eventos', authenticateToken, async (req, res) => {
   try {
@@ -596,10 +572,7 @@ app.post('/api/propostas/public/:id/accept', async (req, res) => {
     const clientIp = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
     const now = new Date();
 
-    // Garante que as colunas existam no banco de dados
-    try { await pool.query('ALTER TABLE propostas ADD COLUMN aceite_nome VARCHAR(255) NULL'); } catch (e) {}
-    try { await pool.query('ALTER TABLE propostas ADD COLUMN aceite_ip VARCHAR(100) NULL'); } catch (e) {}
-    try { await pool.query('ALTER TABLE propostas ADD COLUMN aceite_data DATETIME NULL'); } catch (e) {}
+    // Colunas aceite_nome, aceite_ip, aceite_data já criadas pelo initDb.js
 
     await pool.query(
       'UPDATE propostas SET status = ?, aceite_nome = ?, aceite_ip = ?, aceite_data = ? WHERE id = ?',
@@ -641,7 +614,7 @@ app.post('/api/propostas/public/:id/reject', async (req, res) => {
 app.get('/api/propostas', authenticateToken, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, user_id, numero_proposta, nome_cliente, email_cliente, telefone_cliente, empresa_cliente, servico_prestado, prazo_entrega, observacoes, status, validade, itens, valor_total, created_date FROM propostas WHERE user_id = ? ORDER BY created_date DESC',
+      'SELECT id, user_id, numero_proposta, nome_cliente, email_cliente, telefone_cliente, empresa_cliente, servico_prestado, prazo_entrega, observacoes, status, validade, itens, valor_total, public_token, created_date FROM propostas WHERE user_id = ? ORDER BY created_date DESC',
       [req.user.id]
     );
 
@@ -659,7 +632,7 @@ app.get('/api/propostas', authenticateToken, async (req, res) => {
 app.get('/api/propostas/:id', authenticateToken, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, user_id, numero_proposta, nome_cliente, email_cliente, telefone_cliente, empresa_cliente, servico_prestado, prazo_entrega, observacoes, status, validade, itens, canvas_data, valor_total, created_date FROM propostas WHERE id = ? AND user_id = ?',
+      'SELECT id, user_id, numero_proposta, nome_cliente, email_cliente, telefone_cliente, empresa_cliente, servico_prestado, prazo_entrega, observacoes, status, validade, itens, canvas_data, valor_total, public_token, created_date FROM propostas WHERE id = ? AND user_id = ?',
       [req.params.id, req.user.id]
     );
 
@@ -679,11 +652,12 @@ app.post('/api/propostas', authenticateToken, async (req, res) => {
     const data = req.body;
     const itensJson = JSON.stringify(data.itens || []);
     const canvasDataJson = data.canvas_data ? JSON.stringify(data.canvas_data) : null;
+    const publicToken = crypto.randomUUID();
 
     const [result] = await pool.query(
       `INSERT INTO propostas 
-       (user_id, numero_proposta, nome_cliente, email_cliente, telefone_cliente, empresa_cliente, servico_prestado, prazo_entrega, observacoes, status, validade, itens, canvas_data, valor_total)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (user_id, numero_proposta, nome_cliente, email_cliente, telefone_cliente, empresa_cliente, servico_prestado, prazo_entrega, observacoes, status, validade, itens, canvas_data, valor_total, public_token)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         req.user.id,
         data.numero_proposta || `PROP-${Date.now().toString().slice(-6)}`,
@@ -698,11 +672,12 @@ app.post('/api/propostas', authenticateToken, async (req, res) => {
         data.validade || '',
         itensJson,
         canvasDataJson,
-        parseFloat(data.valor_total) || 0
+        parseFloat(data.valor_total) || 0,
+        publicToken
       ]
     );
 
-    return res.json({ id: result.insertId, ...data });
+    return res.json({ id: result.insertId, public_token: publicToken, ...data });
   } catch (error) {
     return handleServerError(res, error, 'Erro ao criar proposta.');
   }

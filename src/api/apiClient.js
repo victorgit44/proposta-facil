@@ -13,17 +13,12 @@ const notifyAuthListeners = (event, session) => {
   });
 };
 
-// Helper genérico para requisições HTTP com Suporte a HttpOnly Cookies & Bearer Token
+// Helper genérico para requisições HTTP com Suporte a HttpOnly Cookies (Token gerenciado exclusivamente pelo servidor)
 export async function fetchApi(endpoint, options = {}) {
-  const token = localStorage.getItem('token');
   const headers = {
     'Content-Type': 'application/json',
     ...(options.headers || {}),
   };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
 
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
@@ -51,9 +46,6 @@ export const authClient = {
         body: JSON.stringify({ email, password }),
       });
 
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-      }
       notifyAuthListeners('SIGNED_IN', { user: data.user });
 
       return { data: { user: data.user, session: { user: data.user } }, error: null };
@@ -70,9 +62,6 @@ export const authClient = {
         body: JSON.stringify({ email, password, full_name }),
       });
 
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-      }
       notifyAuthListeners('SIGNED_IN', { user: data.user });
 
       return { data: { user: data.user, session: { user: data.user } }, error: null };
@@ -87,21 +76,15 @@ export const authClient = {
     } catch (e) {
       // Ignora falha de rede ao deslogar
     }
-    localStorage.removeItem('token');
     notifyAuthListeners('SIGNED_OUT', null);
     return { error: null };
   },
 
   getSession: async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      return { data: { session: null }, error: null };
-    }
     try {
       const data = await fetchApi('/api/auth/me');
       return { data: { session: { user: data.user } }, error: null };
     } catch (err) {
-      localStorage.removeItem('token');
       return { data: { session: null }, error: null };
     }
   },
