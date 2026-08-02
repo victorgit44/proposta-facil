@@ -112,18 +112,29 @@ export default function Propostas() {
           </p>
         </div>
 
-        <Link
-          to="/propostas/criar"
-          className={isLimitReached ? 'pointer-events-none' : ''}
-        >
-          <button
-            disabled={isLimitReached || isLoading}
-            className="px-5 py-3 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-500 transition duration-200 shadow-lg shadow-blue-600/20 flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+        <div className="flex items-center gap-3">
+          <Link to="/propostas/canvas">
+            <button
+              className="px-4 py-3 rounded-xl font-bold text-sm text-cyan-300 bg-cyan-950/80 border border-cyan-500/30 hover:bg-cyan-900/60 transition duration-200 shadow-lg shadow-cyan-950/40 flex items-center gap-2 cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4 text-cyan-400" />
+              <span>Montar no Canvas Visual</span>
+            </button>
+          </Link>
+
+          <Link
+            to="/propostas/criar"
+            className={isLimitReached ? 'pointer-events-none' : ''}
           >
-            <Plus className="w-4 h-4" />
-            <span>Nova Proposta</span>
-          </button>
-        </Link>
+            <button
+              disabled={isLimitReached || isLoading}
+              className="px-5 py-3 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-500 transition duration-200 shadow-lg shadow-blue-600/20 flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nova Proposta</span>
+            </button>
+          </Link>
+        </div>
       </div>
 
       {/* Warning for limit */}

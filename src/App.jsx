@@ -14,9 +14,11 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 // import SignupPage from './pages/SignupPage'; // Descomente quando tiver
 import LandingPage from './pages/LandingPage';
 import VisualizarPropostaPublica from './pages/VisualizarPropostaPublica';
+import { ProposalCanvasEditor } from './components/ProposalCanvasEditor';
 import ProtectedRoute from './components/ProtectedRoute'; // Nosso guardião de rotas
 
 // Páginas Protegidas (serão renderizadas pelo Outlet dentro do ProtectedRoute/Layout)
+
 import Home from './pages/Home';
 import Propostas from './pages/Propostas';
 import CriarProposta from './pages/CriarProposta';
@@ -318,6 +320,7 @@ function App() {
               <Route path="/chat-ia" element={<ChatIA />} />
               <Route path="/propostas" element={<Propostas />} />
               <Route path="/propostas/criar" element={<CriarProposta />} />
+              <Route path="/propostas/canvas" element={<ProposalCanvasEditor />} />
               <Route path="/propostas/ver/:id" element={<VisualizarProposta />} />
               <Route path="/propostas/editar/:id" element={<EditarProposta />} />
               <Route path="/contratos" element={<Contratos />} />

@@ -300,36 +300,161 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Modelos ── */}
-      <section id="modelos" className="py-20">
-        <div className="max-w-5xl mx-auto px-5 space-y-12">
-          <div className="text-center space-y-3 max-w-2xl mx-auto">
-            <p className="text-xs font-medium uppercase tracking-widest text-[#555568]">Biblioteca de documentos</p>
-            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
-              Modelos prontos para o seu setor
+      {/* ── Business Proposal Templates (Galeria de Modelos de Propostas) ── */}
+      <section id="modelos" className="py-24 bg-[#060e18] relative text-white overflow-hidden border-t border-[#132338]">
+        {/* Fundo sutil com gradiente escuro */}
+        <div className="absolute inset-0 bg-radial from-blue-900/10 via-transparent to-transparent pointer-events-none" />
+
+        <div className="max-w-6xl mx-auto px-5 relative z-10 space-y-12">
+          <div className="text-center space-y-4 max-w-3xl mx-auto">
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-white">
+              Business Proposal Templates
             </h2>
-            <p className="text-sm text-[#8888a0]">
-              Estrutura completa de documentos comerciais e minutas contratuais pré-formatadas.
+            <p className="text-sm md:text-base text-[#94a3b8] max-w-xl mx-auto leading-relaxed">
+              Explore nossa vasta galeria de templates de propostas comerciais profissionalmente redigidos e desenhados para fechar contratos com agilidade.
             </p>
+            <div className="pt-1">
+              <a href="#precos" className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition border-b border-cyan-400/40 pb-0.5">
+                <span>Encontre o template perfeito para o seu segmento</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Grid de Capas de Templates estilo Canva/Gallery */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4 md:gap-6 pt-4">
             {[
-              { tag: 'Tecnologia & SaaS', title: 'Desenvolvimento & TI', desc: 'Escopos para desenvolvimento web, softwares, apps e infraestrutura de TI.' },
-              { tag: 'Consultoria', title: 'Serviços & Vendas', desc: 'Diagnóstico estratégico, assessoria em processos comerciais e treinamento.' },
-              { tag: 'Jurídico', title: 'Contratos & NDAs', desc: 'Minutas com validade jurídica, termos de confidencialidade e aditivos.' },
-            ].map((item, idx) => (
-              <div key={idx} className="p-5 rounded-lg bg-[#111118] border border-[#1e1e2e] hover:border-[#2a2a3e] transition space-y-3">
-                <span className="text-[11px] font-medium text-[#8888a0] bg-[#1a1a24] px-2 py-0.5 rounded">
-                  {item.tag}
-                </span>
-                <h3 className="text-sm font-semibold text-white">{item.title}</h3>
-                <p className="text-[13px] text-[#8888a0] leading-relaxed">{item.desc}</p>
+              {
+                id: 'b2b-agency',
+                title: 'Business Proposal',
+                subtitle: 'Agências & Consultorias',
+                bg: 'bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950',
+                badge: 'Popular',
+                accent: 'border-blue-500/40',
+                preview: 'Capa elegante com fotografia executiva, índice de escopo e cronograma de entregáveis.'
+              },
+              {
+                id: 'catering',
+                title: 'Catering Proposal',
+                subtitle: 'Gastronomia & Eventos',
+                bg: 'bg-gradient-to-br from-amber-950 via-slate-900 to-slate-950',
+                badge: 'Eventos',
+                accent: 'border-amber-500/40',
+                preview: 'Apresentação de menus, lista de insumos e orçamento discriminado por convidado.'
+              },
+              {
+                id: 'commercial-leasing',
+                title: 'Commercial Leasing',
+                subtitle: 'Imobiliário & Espaços',
+                bg: 'bg-gradient-to-br from-stone-900 via-stone-800 to-slate-950',
+                badge: 'Real Estate',
+                accent: 'border-emerald-500/40',
+                preview: 'Proposta de locação comercial com mapas de espaço, garantias e tabela de aluguéis.'
+              },
+              {
+                id: 'construction-bid',
+                title: 'Construction Bid',
+                subtitle: 'Engenharia & Obras',
+                bg: 'bg-gradient-to-br from-cyan-950 via-slate-900 to-blue-950',
+                badge: 'Engenharia',
+                accent: 'border-cyan-500/40',
+                preview: 'Orçamento de obra civil, cronograma físico-financeiro e memorial descritivo.'
+              },
+              {
+                id: 'cybersecurity',
+                title: 'Cyber Security Proposal',
+                subtitle: 'TI & Cibersegurança',
+                bg: 'bg-gradient-to-br from-blue-950 via-slate-900 to-violet-950',
+                badge: 'TI & SaaS',
+                accent: 'border-violet-500/40',
+                preview: 'Relatório de auditoria de segurança, plano de mitigação e planos recorrentes.'
+              },
+              {
+                id: 'influencer',
+                title: 'Influencer & Media Kit',
+                subtitle: 'Marketing & Influencers',
+                bg: 'bg-gradient-to-br from-purple-950 via-slate-900 to-pink-950',
+                badge: 'Marketing',
+                accent: 'border-pink-500/40',
+                preview: 'Métricas de alcance, formatos de publipost e pacotes de patrocínio comercial.'
+              },
+              {
+                id: 'cleaning-service',
+                title: 'Facility & Clean Service',
+                subtitle: 'Serviços Terceirizados',
+                bg: 'bg-gradient-to-br from-teal-950 via-slate-900 to-slate-950',
+                badge: 'Serviços',
+                accent: 'border-teal-500/40',
+                preview: 'Planilha de escala de equipes, SLA de atendimento e fornecimento de materiais.'
+              },
+              {
+                id: 'custom-workshop',
+                title: 'Customized Workshops',
+                subtitle: 'Educação & Treinamentos',
+                bg: 'bg-gradient-to-br from-slate-900 via-zinc-900 to-blue-950',
+                badge: 'Treinamento',
+                accent: 'border-blue-400/40',
+                preview: 'Proposta pedagógica, programa de horas e investimento corporativo por turma.'
+              }
+            ].map((tmpl) => (
+              <div 
+                key={tmpl.id}
+                onClick={() => navigate('/login')}
+                className={`group relative rounded-xl ${tmpl.bg} border ${tmpl.accent} p-4 h-64 flex flex-col justify-between shadow-xl cursor-pointer hover:-translate-y-1.5 transition-all duration-300 overflow-hidden hover:shadow-2xl hover:shadow-blue-500/10`}
+              >
+                {/* Elemento gráfico de folha de papel no card */}
+                <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-bl-full pointer-events-none group-hover:scale-110 transition-transform" />
+                
+                <div className="space-y-2 relative z-10">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/10 text-white backdrop-blur-md">
+                      {tmpl.badge}
+                    </span>
+                    <FileText className="w-4 h-4 text-white/50 group-hover:text-cyan-400 transition-colors" />
+                  </div>
+                  <h3 className="text-base font-bold text-white tracking-tight leading-snug group-hover:text-cyan-300 transition-colors">
+                    {tmpl.title}
+                  </h3>
+                  <p className="text-[11px] text-[#94a3b8] font-medium">{tmpl.subtitle}</p>
+                </div>
+
+                {/* Thumbnail Simulado de Documento */}
+                <div className="my-auto bg-black/40 rounded-lg p-2.5 border border-white/10 space-y-1.5 backdrop-blur-sm">
+                  <div className="w-3/4 h-2 bg-white/30 rounded-full" />
+                  <div className="w-1/2 h-1.5 bg-white/20 rounded-full" />
+                  <div className="w-full h-1 bg-white/10 rounded-full" />
+                  <div className="w-5/6 h-1 bg-white/10 rounded-full" />
+                </div>
+
+                <div className="relative z-10 flex items-center justify-between pt-2 border-t border-white/10">
+                  <span className="text-[11px] text-white/70 group-hover:text-white transition">Usar modelo</span>
+                  <div className="w-6 h-6 rounded-full bg-white/10 group-hover:bg-blue-600 flex items-center justify-center transition">
+                    <ArrowRight className="w-3 h-3 text-white" />
+                  </div>
+                </div>
               </div>
             ))}
           </div>
+
+          <div className="text-center pt-6">
+            <button
+              onClick={() => navigate('/login')}
+              className="px-6 py-3 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 transition shadow-lg shadow-blue-600/25 flex items-center gap-2 mx-auto cursor-pointer"
+            >
+              <BookOpen className="w-4 h-4" />
+              Ver Todos os Templates no Canvas
+            </button>
+          </div>
+        </div>
+
+        {/* Divisor em Curva Orgânica idêntico à imagem de referência */}
+        <div className="absolute bottom-0 left-0 right-0 overflow-hidden leading-none pointer-events-none">
+          <svg className="relative block w-full h-16 md:h-24 text-[#0d0d14]" viewBox="0 0 1200 120" preserveAspectRatio="none">
+            <path d="M0,0 C300,90 800,120 1200,40 L1200,120 L0,120 Z" fill="currentColor"></path>
+          </svg>
         </div>
       </section>
+
 
       {/* ── Preços ── */}
       <section id="precos" className="py-20 border-y border-[#1e1e2e] bg-[#0d0d14]">

@@ -93,6 +93,14 @@ export default function Templates() {
           </div>
           <p className="text-xs text-slate-400 mt-1">Modelos pré-formatados de propostas comerciais e minutas contratuais prontas para uso.</p>
         </div>
+
+        <button
+          onClick={() => navigate('/propostas/canvas')}
+          className="px-5 py-3 rounded-xl font-bold text-sm text-cyan-300 bg-cyan-950/80 border border-cyan-500/30 hover:bg-cyan-900/60 transition shadow-lg shadow-cyan-950/40 flex items-center gap-2 cursor-pointer shrink-0"
+        >
+          <Sparkles className="w-4 h-4 text-cyan-400" />
+          <span>Montar no Canvas Visual</span>
+        </button>
       </div>
 
       {/* Category Pills */}
