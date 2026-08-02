@@ -30,48 +30,59 @@ export function LeftSidebar({
   return (
     <aside className="w-72 bg-[#111118] border-r border-[#1e1e2e] flex flex-col shrink-0 select-none z-20">
       {/* Tab Selector Header */}
-      <div className="flex items-center border-b border-[#1e1e2e] bg-[#0a0a0f] p-1 gap-1">
+      <div className="flex items-center border-b border-[#1e1e2e] bg-[#0a0a0f] p-1 gap-0.5">
         <button
           onClick={() => setActiveTab('sections')}
-          className={`flex-1 py-2 text-[11px] font-medium rounded transition flex items-center justify-center gap-1.5 cursor-pointer ${
+          className={`flex-1 py-1.5 text-[10px] font-medium rounded transition flex items-center justify-center gap-1 cursor-pointer ${
             activeTab === 'sections' ? 'bg-[#111118] text-white border border-[#1e1e2e]' : 'text-[#8888a0] hover:text-white'
           }`}
           title="Navegador de Seções"
         >
-          <Layers className="w-3.5 h-3.5" />
+          <Layers className="w-3 h-3" />
           <span>Seções</span>
         </button>
 
         <button
           onClick={() => setActiveTab('library')}
-          className={`flex-1 py-2 text-[11px] font-medium rounded transition flex items-center justify-center gap-1.5 cursor-pointer ${
+          className={`flex-1 py-1.5 text-[10px] font-medium rounded transition flex items-center justify-center gap-1 cursor-pointer ${
             activeTab === 'library' ? 'bg-[#111118] text-white border border-[#1e1e2e]' : 'text-[#8888a0] hover:text-white'
           }`}
           title="Biblioteca de Blocos"
         >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Biblioteca</span>
+          <Plus className="w-3 h-3" />
+          <span>Blocos</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('media')}
+          className={`flex-1 py-1.5 text-[10px] font-medium rounded transition flex items-center justify-center gap-1 cursor-pointer ${
+            activeTab === 'media' ? 'bg-[#111118] text-white border border-[#1e1e2e]' : 'text-[#8888a0] hover:text-white'
+          }`}
+          title="Galeria de Imagens Corporativas"
+        >
+          <ImageIcon className="w-3 h-3" />
+          <span>Fotos HD</span>
         </button>
 
         <button
           onClick={() => setActiveTab('brand')}
-          className={`flex-1 py-2 text-[11px] font-medium rounded transition flex items-center justify-center gap-1.5 cursor-pointer ${
+          className={`flex-1 py-1.5 text-[10px] font-medium rounded transition flex items-center justify-center gap-1 cursor-pointer ${
             activeTab === 'brand' ? 'bg-[#111118] text-white border border-[#1e1e2e]' : 'text-[#8888a0] hover:text-white'
           }`}
           title="Brand Kit & Temas"
         >
-          <Palette className="w-3.5 h-3.5" />
+          <Palette className="w-3 h-3" />
           <span>Temas</span>
         </button>
 
         <button
           onClick={() => setActiveTab('variables')}
-          className={`flex-1 py-2 text-[11px] font-medium rounded transition flex items-center justify-center gap-1.5 cursor-pointer ${
+          className={`flex-1 py-1.5 text-[10px] font-medium rounded transition flex items-center justify-center gap-1 cursor-pointer ${
             activeTab === 'variables' ? 'bg-[#111118] text-white border border-[#1e1e2e]' : 'text-[#8888a0] hover:text-white'
           }`}
           title="Variáveis Dinâmicas"
         >
-          <Hash className="w-3.5 h-3.5" />
+          <Hash className="w-3 h-3" />
           <span>Variáveis</span>
         </button>
       </div>
@@ -223,6 +234,55 @@ export function LeftSidebar({
                 <p className="text-[11px] text-[#8888a0] leading-relaxed">
                   {preset.description}
                 </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── ABA 3: BANCO DE IMAGENS CORPORATIVAS HD ── */}
+      {activeTab === 'media' && (
+        <div className="flex-1 flex flex-col p-4 overflow-y-auto space-y-4">
+          <div className="space-y-1">
+            <span className="text-xs font-medium uppercase tracking-wider text-[#555568]">Galeria de Fotos Corporativas</span>
+            <p className="text-[11px] text-[#8888a0]">Clique em uma imagem para usá-la ou copiar o link HD diretamente.</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3">
+            {[
+              { titulo: 'Escritório Corporativo Moderno', url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80', tag: 'Executivo' },
+              { titulo: 'Reunião de Diretoria B2B', url: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=80', tag: 'Reunião' },
+              { titulo: 'Desenvolvedor & SaaS', url: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=1200&q=80', tag: 'Tecnologia' },
+              { titulo: 'Data Center & Servidores Cloud', url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80', tag: 'Cloud' },
+              { titulo: 'Engenharia Civil & Obra', url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80', tag: 'Engenharia' },
+              { titulo: 'Buffet Gastronômico Premium', url: 'https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=1200&q=80', tag: 'Gastronomia' },
+              { titulo: 'Laje Corporativa Imobiliária', url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80', tag: 'Imobiliário' },
+              { titulo: 'Auditoria & Contrato Assinado', url: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=1200&q=80', tag: 'Jurídico' }
+            ].map((media, idx) => (
+              <div
+                key={idx}
+                className="group relative rounded-lg border border-[#1e1e2e] bg-[#0a0a0f] overflow-hidden hover:border-blue-500/60 transition cursor-pointer"
+                onClick={() => {
+                  navigator.clipboard.writeText(media.url);
+                  toast.success(`URL da foto "${media.titulo}" copiada!`);
+                }}
+              >
+                <div className="h-28 w-full overflow-hidden bg-[#1a1a24]">
+                  <img
+                    src={media.url}
+                    alt={media.titulo}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <div className="p-2.5 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase text-blue-400 block">{media.tag}</span>
+                    <h4 className="text-xs font-medium text-white truncate max-w-[170px]">{media.titulo}</h4>
+                  </div>
+                  <button className="p-1 rounded bg-[#1a1a24] text-[#8888a0] group-hover:text-white hover:bg-white/10 transition">
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

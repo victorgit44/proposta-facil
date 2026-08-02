@@ -171,5 +171,59 @@ export const PRESET_BLOCKS = [
       heading: '6. Aceite Digital & Registro Jurídico',
       terms: 'Ao assinar digitalmente abaixo, o contratante {{cliente.nome}} aprova integralmente os termos desta proposta para início imediato dos serviços.'
     }
+  },
+
+  // ── ESCOPOS POR NICHO (ENGENHARIA, GASTRO, FACILITIES) ──
+  {
+    category: 'scope',
+    id: 'scope-engenharia-obras',
+    name: 'Escopo Engenharia & Reforma Corporativa',
+    description: 'Checklist de entregáveis de civil, elétrica e acabamento.',
+    type: 'scope',
+    data: {
+      heading: 'Memorial Descritivo & Entregáveis de Obra',
+      items: [
+        'Demolição e remoção de entulho com destinação ecológica licenciada',
+        'Construção de divisórias em Drywall com isolamento acústico em lã de rocha',
+        'Adequação de instalações elétricas corporativas, quadros e cabeamento estruturado Cat6',
+        'Instalação de piso elevado e acabamento em carpete modular de alta trafegabilidade',
+        'Pintura acrílica lavável e emissão da ART (Anotação de Responsabilidade Técnica)'
+      ]
+    }
+  },
+  {
+    category: 'scope',
+    id: 'scope-gastronomia-catering',
+    name: 'Escopo Catering & Buffet Executivo',
+    description: 'Cardápio, insumos e atendimento por pessoa.',
+    type: 'scope',
+    data: {
+      heading: 'Menu Executivo & Insumos do Evento',
+      items: [
+        'Coquetel volante de recepção com 8 variedades de finger foods quentes e frios',
+        'Buffet quente com 2 opções de prato principal e acompanhamentos gourmet',
+        'Mesa de sobremesas artesanais e estação de café expresso gourmet',
+        'Equipe de garçons, maitre e chef executivo uniformizados',
+        'Fornecimento de louças, talheres de inox e taças de cristal'
+      ]
+    }
+  },
+  {
+    category: 'scope',
+    id: 'scope-ciberseguranca-pentest',
+    name: 'Escopo PenTest & Cibersegurança',
+    description: 'Auditoria de segurança, teste de invasão e relatório LGPD.',
+    type: 'scope',
+    data: {
+      heading: 'Metodologia de Teste de Invasão & Avaliação de Riscos',
+      items: [
+        'Reconhecimento e mapeamento de ativos externos e APIs públicas',
+        'Execução de PenTest (Black-box & Grey-box) conforme metodologia OWASP Top 10',
+        'Análise de vulnerabilidades internas em servidores e bancos de dados',
+        'Emissão de Relatório Executivo e Técnico com matriz de severidade CVSS',
+        'Sessão de alinhamento com equipe de TI e re-teste de validação em 30 dias'
+      ]
+    }
   }
 ];
+

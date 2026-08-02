@@ -30,7 +30,8 @@ const pool = mysql.createPool({
   idleTimeout: 30000,        // Fecha conexões inativas após 30 segundos
   queueLimit: 0,
   enableKeepAlive: true,     // Envia pacotes TCP Keep-Alive
-  keepAliveInitialDelay: 10000 // Inicia o ping TCP após 10 segundos
+  keepAliveInitialDelay: 10000, // Inicia o ping TCP após 10 segundos
+  connectTimeout: 5000       // Timeout rápido de 5s para conexão inicial
 });
 
 // Resiliência Automática: Intercepta e Tenta Novamente em caso de ECONNRESET / Desconexão

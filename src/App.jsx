@@ -1,9 +1,9 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './queryClient';
-import { Toaster } from 'sonner'
-import { AuthProvider, useAuth } from './context/AuthContext'
+import { Toaster } from 'sonner';
+import { useAuth } from './context/AuthContext';
 // O AuthProvider já está no main.jsx, não precisa aqui
 
 // Layouts e Páginas Públicas
@@ -293,51 +293,44 @@ function PlanosPage() {
 
 function App() {
   return (
-    <AuthProvider>
+    <QueryClientProvider client={queryClient}>
       <Toaster position="top-right" richColors />
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <Routes>
-            {/* Rotas Públicas */}
-            <Route path="/p/:id" element={<VisualizarPropostaPublica />} />
-            <Route path="/landing" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/update-password" element={<UpdatePasswordPage />} />
-            {/* <Route path="/signup" element={<SignupPage />} /> */}
+      <BrowserRouter>
+        <Routes>
+          {/* Rotas Públicas */}
+          <Route path="/p/:id" element={<VisualizarPropostaPublica />} />
+          <Route path="/landing" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/update-password" element={<UpdatePasswordPage />} />
 
-            {/* Rotas Protegidas (envolvidas pelo ProtectedRoute que inclui o Layout) */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/crm" element={<CRM />} />
-              <Route path="/clientes" element={<Clientes />} />
-              <Route path="/templates" element={<Templates />} />
-              <Route path="/automacoes" element={<Automacoes />} />
-              <Route path="/produtos" element={<Produtos />} />
-              <Route path="/biblioteca" element={<BibliotecaConteudo />} />
-              <Route path="/planos" element={<Planos />} />
-              <Route path="/chat-ia" element={<ChatIA />} />
-              <Route path="/propostas" element={<Propostas />} />
-              <Route path="/propostas/criar" element={<ProposalCanvasEditor />} />
-              <Route path="/propostas/canvas" element={<ProposalCanvasEditor />} />
-              <Route path="/propostas/ver/:id" element={<VisualizarProposta />} />
-              <Route path="/propostas/editar/:id" element={<EditarProposta />} />
-              <Route path="/contratos" element={<Contratos />} />
-              <Route path="/contratos/criar" element={<CriarContrato />} />
-              <Route path="/contratos/ver/:id" element={<VisualizarContrato />} />
-              <Route path="/contratos/editar/:id" element={<EditarContrato />} />
-              <Route path="/configuracoes" element={<Configuracoes />} />
-              {/* Adicione outras rotas protegidas aqui */}
-            </Route>
-
-            {/* Rota Catch-all (Opcional - redireciona para login se rota não existir) */}
-            {/* <Route path="*" element={<Navigate to="/login" replace />} /> */}
-
-          </Routes>
-        </BrowserRouter>
-      </QueryClientProvider>
-    </AuthProvider>);
+          {/* Rotas Protegidas (envolvidas pelo ProtectedRoute que inclui o Layout) */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/crm" element={<CRM />} />
+            <Route path="/clientes" element={<Clientes />} />
+            <Route path="/templates" element={<Templates />} />
+            <Route path="/automacoes" element={<Automacoes />} />
+            <Route path="/produtos" element={<Produtos />} />
+            <Route path="/biblioteca" element={<BibliotecaConteudo />} />
+            <Route path="/planos" element={<Planos />} />
+            <Route path="/chat-ia" element={<ChatIA />} />
+            <Route path="/propostas" element={<Propostas />} />
+            <Route path="/propostas/criar" element={<ProposalCanvasEditor />} />
+            <Route path="/propostas/canvas" element={<ProposalCanvasEditor />} />
+            <Route path="/propostas/ver/:id" element={<VisualizarProposta />} />
+            <Route path="/propostas/editar/:id" element={<EditarProposta />} />
+            <Route path="/contratos" element={<Contratos />} />
+            <Route path="/contratos/criar" element={<CriarContrato />} />
+            <Route path="/contratos/ver/:id" element={<VisualizarContrato />} />
+            <Route path="/contratos/editar/:id" element={<EditarContrato />} />
+            <Route path="/configuracoes" element={<Configuracoes />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
 }
 
 export default App;

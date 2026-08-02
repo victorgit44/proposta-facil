@@ -74,11 +74,14 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 
 // -------------------------------------------------------------
-// SEGURANÇA: RATE LIMITING
+// SEGURANÇA: RATE LIMITING (Ativo em Produção)
 // -------------------------------------------------------------
+const isDev = process.env.NODE_ENV === 'development';
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
+  skip: () => isDev,
   message: { error: 'Muitas tentativas de acesso. Por favor, tente novamente em alguns minutos.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -87,6 +90,7 @@ const authLimiter = rateLimit({
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 500,
+  skip: () => isDev,
   message: { error: 'Limite de requisições excedido. Tente novamente mais tarde.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -100,6 +104,7 @@ app.use('/api/auth/signup', authLimiter);
 const publicLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
+  skip: () => isDev,
   message: { error: 'Muitas requisições. Tente novamente em alguns minutos.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -1114,6 +1119,84 @@ app.post('/api/upload-logo', authenticateToken, async (req, res) => {
   }
 });
 
+// ── ROTAS DE TEMPLATES PRESET & BANCO DE MÍDIAS ──
+
+// Obter todos os templates pré-prontos (com filtro opcional por categoria ou busca)
+app.get('/api/templates', async (req, res) => {
+  try {
+    const { categoria, search } = req.query;
+    let query = 'SELECT * FROM templates_preset WHERE 1=1';
+    const params = [];
+
+    if (categoria && categoria !== 'todos') {
+      query += ' AND categoria = ?';
+      params.push(categoria);
+    }
+
+    if (search) {
+      query += ' AND (titulo LIKE ? OR descricao LIKE ? OR badge LIKE ?)';
+      const searchPattern = `%${search}%`;
+      params.push(searchPattern, searchPattern, searchPattern);
+    }
+
+    query += ' ORDER BY id ASC';
+
+    const [rows] = await pool.query(query, params);
+    return res.json(rows);
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao carregar banco de modelos de propostas.');
+  }
+});
+
+// Obter template por ID ou Slug
+app.get('/api/templates/:idOrSlug', async (req, res) => {
+  try {
+    const param = req.params.idOrSlug;
+    const isNumeric = /^\d+$/.test(param);
+    
+    let query = isNumeric 
+      ? 'SELECT * FROM templates_preset WHERE id = ?' 
+      : 'SELECT * FROM templates_preset WHERE slug = ?';
+      
+    const [rows] = await pool.query(query, [param]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Modelo não encontrado.' });
+    }
+
+    return res.json(rows[0]);
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao carregar detalhes do modelo.');
+  }
+});
+
+// Obter banco de mídias/imagens de alta definição
+app.get('/api/media-assets', async (req, res) => {
+  try {
+    const { categoria, search } = req.query;
+    let query = 'SELECT * FROM media_assets WHERE 1=1';
+    const params = [];
+
+    if (categoria && categoria !== 'todas') {
+      query += ' AND categoria = ?';
+      params.push(categoria);
+    }
+
+    if (search) {
+      query += ' AND (titulo LIKE ? OR tags LIKE ?)';
+      const searchPattern = `%${search}%`;
+      params.push(searchPattern, searchPattern);
+    }
+
+    query += ' ORDER BY id ASC';
+
+    const [rows] = await pool.query(query, params);
+    return res.json(rows);
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao carregar biblioteca de imagens corporativas.');
+  }
+});
+
 // Servir arquivos estáticos do frontend (Deploy em Produção no EasyPanel)
 const distPath = path.resolve(__dirname, '../dist');
 app.use(express.static(distPath));
@@ -1126,10 +1209,9 @@ app.use((req, res, next) => {
 });
 
 // Inicialização do Servidor
-initDb().then(() => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Servidor API REST seguro rodando na porta ${PORT}`);
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor API REST seguro rodando na porta ${PORT}`);
+  initDb().catch(err => {
+    console.error('❌ Falha ao verificar banco de dados:', err);
   });
-}).catch(err => {
-  console.error('❌ Falha ao inicializar o banco de dados:', err);
 });

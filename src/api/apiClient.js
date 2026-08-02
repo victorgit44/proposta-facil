@@ -35,6 +35,10 @@ export async function fetchApi(endpoint, options = {}) {
   return data;
 }
 
+// Cache de sessão e controle de requisição pendente em memória para alta performance
+let cachedSession = undefined;
+let currentSessionPromise = null;
+
 // -------------------------------------------------------------
 // CLIENTE AUTH (Substitui supabase.auth)
 // -------------------------------------------------------------
@@ -46,10 +50,12 @@ export const authClient = {
         body: JSON.stringify({ email, password }),
       });
 
-      notifyAuthListeners('SIGNED_IN', { user: data.user });
+      cachedSession = data.user ? { user: data.user } : null;
+      notifyAuthListeners('SIGNED_IN', cachedSession);
 
-      return { data: { user: data.user, session: { user: data.user } }, error: null };
+      return { data: { user: data.user, session: cachedSession }, error: null };
     } catch (err) {
+      cachedSession = null;
       return { data: { user: null, session: null }, error: err };
     }
   },
@@ -62,10 +68,12 @@ export const authClient = {
         body: JSON.stringify({ email, password, full_name }),
       });
 
-      notifyAuthListeners('SIGNED_IN', { user: data.user });
+      cachedSession = data.user ? { user: data.user } : null;
+      notifyAuthListeners('SIGNED_IN', cachedSession);
 
-      return { data: { user: data.user, session: { user: data.user } }, error: null };
+      return { data: { user: data.user, session: cachedSession }, error: null };
     } catch (err) {
+      cachedSession = null;
       return { data: { user: null, session: null }, error: err };
     }
   },
@@ -76,17 +84,32 @@ export const authClient = {
     } catch (e) {
       // Ignora falha de rede ao deslogar
     }
+    cachedSession = null;
     notifyAuthListeners('SIGNED_OUT', null);
     return { error: null };
   },
 
   getSession: async () => {
-    try {
-      const data = await fetchApi('/api/auth/me');
-      return { data: { session: { user: data.user } }, error: null };
-    } catch (err) {
-      return { data: { session: null }, error: null };
+    if (cachedSession !== undefined) {
+      return { data: { session: cachedSession }, error: null };
     }
+    if (currentSessionPromise) {
+      return currentSessionPromise;
+    }
+    currentSessionPromise = (async () => {
+      try {
+        const data = await fetchApi('/api/auth/me');
+        const session = data.user ? { user: data.user } : null;
+        cachedSession = session;
+        return { data: { session }, error: null };
+      } catch (err) {
+        cachedSession = null;
+        return { data: { session: null }, error: null };
+      } finally {
+        currentSessionPromise = null;
+      }
+    })();
+    return currentSessionPromise;
   },
 
   getUser: async () => {
@@ -100,6 +123,8 @@ export const authClient = {
     // Executa verificação inicial imediata
     authClient.getSession().then(({ data }) => {
       callback(data?.session ? 'SIGNED_IN' : 'SIGNED_OUT', data?.session || null);
+    }).catch(() => {
+      callback('SIGNED_OUT', null);
     });
 
     return {
