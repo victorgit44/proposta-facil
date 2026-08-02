@@ -155,6 +155,8 @@ export const base44 = {
     Contrato: createEntityClient('/api/contratos'),
     ConfiguracaoEmpresa: createEntityClient('/api/configuracoes'),
     Assinatura: createEntityClient('/api/assinaturas'),
+    Produto: createEntityClient('/api/produtos'),
+    Biblioteca: createEntityClient('/api/biblioteca'),
   },
   auth: {
     me: async () => {

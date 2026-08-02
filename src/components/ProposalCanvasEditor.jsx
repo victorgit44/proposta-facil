@@ -1,37 +1,43 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Plus, Trash2, ArrowUp, ArrowDown, Copy, Eye, Edit3, Save, Sparkles,
   Layout, Type, DollarSign, ShieldCheck, FileText, CheckCircle2,
-  Palette, Image as ImageIcon, Sliders, Layers, ChevronRight, Check, X, ArrowLeft
+  Palette, Image as ImageIcon, Sliders, Layers, ChevronRight, Check, X, ArrowLeft,
+  GripVertical, HelpCircle, Upload, Play, Move, AlignLeft, AlignCenter, AlignRight
 } from 'lucide-react';
+import { base44, fetchApi, supabase } from '@/api/supabaseClient';
+import { queryClient } from '@/queryClient';
 import { toast } from 'sonner';
+import { formatCurrency } from '@/utils/formatters';
 
-const BLOCK_TYPES = [
-  { id: 'cover', name: 'Capa Executiva', icon: Layout, desc: 'Título principal, subtítulo, dados da empresa e cliente' },
-  { id: 'summary', name: 'Resumo Executivo', icon: Type, desc: 'Apresentação da solução e visão do projeto' },
-  { id: 'scope', name: 'Escopo & Entregáveis', icon: FileText, desc: 'Lista detalhada de etapas e fases do projeto' },
-  { id: 'pricing', name: 'Tabela de Investimento', icon: DollarSign, desc: 'Itens, quantidades, valores e cálculo automático' },
-  { id: 'timeline', name: 'Cronograma', icon: Layers, desc: 'Etapas de execução com prazos e entregáveis' },
-  { id: 'terms', name: 'Termos & Condições', icon: ShieldCheck, desc: 'Condições de pagamento e validade da proposta' },
-  { id: 'signature', name: 'Carimbo de Aceite Digital', icon: CheckCircle2, desc: 'Espaço de validação e aceite com IP/data' }
+const SECTIONS = [
+  { id: 'cover', name: 'Capa Executiva', icon: Layout },
+  { id: 'summary', name: 'Resumo Executivo', icon: Type },
+  { id: 'scope', name: 'Escopo & Entregáveis', icon: FileText },
+  { id: 'pricing', name: 'Tabela de Investimento', icon: DollarSign },
+  { id: 'terms', name: 'Termos & Condições', icon: ShieldCheck },
+  { id: 'signature', name: 'Assinatura Digital', icon: CheckCircle2 }
 ];
 
 const PRESET_TEMPLATES = [
   {
     id: 'preset-b2b',
-    name: 'Consultoria B2B SaaS',
-    color: '#2563eb',
+    name: 'Proposta Comercial Proposify SaaS',
+    color: '#1e3a8a', // Deep Blue Proposify
     blocks: [
       {
         id: 'b-1',
         type: 'cover',
         data: {
-          title: 'Proposta Comercial - Transformação Digital',
-          subtitle: 'Preparado especialmente para ACME Corp',
-          companyName: 'PropostaFácil Tech Solutions',
-          clientName: 'ACME Corporation',
-          date: 'Agosto de 2026'
+          title: 'PROJECT QUOTE PROPOSAL',
+          subtitle: 'Preparado especialmente para client_name',
+          companyName: 'PropostaFácil Technologies',
+          clientName: 'ACME Corp',
+          logoUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80',
+          logoAlign: 'left',
+          logoSize: 120
         }
       },
       {
@@ -39,19 +45,19 @@ const PRESET_TEMPLATES = [
         type: 'summary',
         data: {
           heading: '1. Resumo Executivo',
-          content: 'Esta proposta apresenta o plano estratégico para automação comercial e otimização dos fluxos de vendas da ACME Corporation, visando aumentar a taxa de conversão em até 35% nos primeiros 90 dias.'
+          content: 'Apresentamos a solução de aceleração comercial e emissão inteligente de propostas digitais para escalar as vendas B2B da sua empresa com carimbo de aceite jurídico.'
         }
       },
       {
         id: 'b-3',
         type: 'scope',
         data: {
-          heading: '2. Escopo dos Serviços',
+          heading: '2. Escopo de Serviços & Solução',
           items: [
-            'Implantação de Plataforma Comercial B2B',
-            'Integração de Inteligência Artificial para Geração de Propostas',
-            'Treinamento da Equipe de Vendas (10 colaboradores)',
-            'Suporte Técnico Dedicado 24/7'
+            'Implantação de Editor de Propostas Interativo (Canvas Drag & Drop)',
+            'Integração com Inteligência Artificial para Geração Automática de Conteúdo',
+            'Treinamento da Equipe Comercial e Onboarding de Vendedores',
+            'Configuração de Assinatura Digital e Rastreamento de Visualizações'
           ]
         }
       },
@@ -59,730 +65,822 @@ const PRESET_TEMPLATES = [
         id: 'b-4',
         type: 'pricing',
         data: {
-          heading: '3. Investimento & Condições',
+          heading: '3. Tabela de Investimento',
           items: [
-            { desc: 'Licenciamento Anual SaaS', qty: 1, val: 12000 },
-            { desc: 'Setup & Treinamento Inicial', qty: 1, val: 3500 }
+            { desc: 'Licenciamento Anual da Plataforma SaaS', qty: 1, val: 12000 },
+            { desc: 'Setup Inicial & Personalização de Templates', qty: 1, val: 3000 }
           ]
         }
       },
       {
         id: 'b-5',
-        type: 'signature',
+        type: 'terms',
         data: {
-          heading: '4. Aceite Digital',
-          terms: 'Ao clicar em Aceitar, o contratante concorda com todos os termos desta proposta comercial com carimbo de data/hora e IP registrado.'
-        }
-      }
-    ]
-  },
-  {
-    id: 'preset-catering',
-    name: 'Gastronomia & Eventos',
-    color: '#d97706',
-    blocks: [
-      {
-        id: 'c-1',
-        type: 'cover',
-        data: {
-          title: 'Proposta de Catering & Buffet Executivo',
-          subtitle: 'Evento Anual de Premiação 2026',
-          companyName: 'Gourmet Events',
-          clientName: 'Grupo Vanguarda',
-          date: 'Setembro de 2026'
+          heading: '4. Termos & Validade',
+          content: 'Esta proposta possui validade de 15 dias úteis. Condições de pagamento: 50% na aprovação e 50% na entrega final do projeto.'
         }
       },
       {
-        id: 'c-2',
-        type: 'pricing',
+        id: 'b-6',
+        type: 'signature',
         data: {
-          heading: 'Orçamento do Buffet (200 Pessoas)',
-          items: [
-            { desc: 'Coquetel Completo + Bebidas Premium', qty: 200, val: 120 },
-            { desc: 'Equipe de Garçons e Barman (8h)', qty: 1, val: 2800 }
-          ]
+          heading: '5. Aceite Digital da Proposta',
+          terms: 'Ao assinar digitalmente abaixo, o contratante valida o início dos serviços com registro de IP, data e hora.'
         }
       }
     ]
   }
 ];
 
-export function ProposalCanvasEditor({ initialData, onSave }) {
+export function ProposalCanvasEditor() {
   const navigate = useNavigate();
+  const { id: editId } = useParams();
 
-  const [templateName, setTemplateName] = useState(initialData?.name || 'Novo Template de Proposta');
-  const [accentColor, setAccentColor] = useState(initialData?.color || '#2563eb');
-  const [blocks, setBlocks] = useState(initialData?.blocks || PRESET_TEMPLATES[0].blocks);
-  const [selectedBlockId, setSelectedBlockId] = useState(blocks[0]?.id || null);
+  const [templateName, setTemplateName] = useState('Projeto de Proposta Comercial');
+  const [clientName, setClientName] = useState('ACME Corporation');
+  const [clientEmail, setClientEmail] = useState('roberto@acme.com');
+  const [accentColor, setAccentColor] = useState('#1e3a8a');
+  const [blocks, setBlocks] = useState(PRESET_TEMPLATES[0].blocks);
+  const [activeSection, setActiveSection] = useState('cover');
   const [isPreview, setIsPreview] = useState(false);
-  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState(null);
 
-  const selectedBlock = blocks.find(b => b.id === selectedBlockId);
+  // Tutorial Guiado Onboarding (Estilo Proposify)
+  const [tutorialStep, setTutorialStep] = useState(1);
+  const [showTutorial, setShowTutorial] = useState(true);
 
-  // Adicionar bloco
+  const tutorialSteps = [
+    {
+      title: 'Bem-vindo ao Canvas Visual Proposify! 🚀',
+      content: 'Este é o novo editor visual interativo do PropostaFácil. Monte propostas corporativas incríveis arrastando e personalizando blocos sem depender de formulários estáticos.'
+    },
+    {
+      title: 'Navegador de Seções (Esquerda) 📄',
+      content: 'Navegue rapidamente entre a Capa, o Escopo, a Tabela de Preços e a Assinatura Digital. Você pode adicionar novas seções ou reordená-las a qualquer momento.'
+    },
+    {
+      title: 'Painel Build & Ferramentas (Direita) 🛠️',
+      content: 'Insira novos blocos de Texto, Imagens, Logos, Tabelas de Preços, Vídeos ou utilize a IA Copilot para preencher o escopo automaticamente.'
+    },
+    {
+      title: 'Reordenação Drag & Drop ↕️',
+      content: 'Clique nos manipuladores verticais no lado esquerdo de qualquer bloco e arraste para cima ou para baixo para ajustar a ordem da proposta.'
+    },
+    {
+      title: 'Salvar e Emitir Proposta 💾',
+      content: 'Quando sua proposta estiver pronta, clique em "Salvar e Emitir Proposta" no topo para gravar no banco de dados MariaDB!'
+    }
+  ];
+
+  // Carregar dados de proposta existente se estiver no modo de edição
+  const { data: propostaExistente } = useQuery({
+    queryKey: ['proposta', editId],
+    queryFn: () => fetchApi(`/api/propostas/${editId}`),
+    enabled: !!editId,
+  });
+
+  useEffect(() => {
+    if (propostaExistente) {
+      if (propostaExistente.nome_cliente) setClientName(propostaExistente.nome_cliente);
+      if (propostaExistente.email_cliente) setClientEmail(propostaExistente.email_cliente);
+      if (propostaExistente.numero_proposta) setTemplateName(`Proposta ${propostaExistente.numero_proposta}`);
+      if (propostaExistente.canvas_data?.blocks) {
+        setBlocks(propostaExistente.canvas_data.blocks);
+        if (propostaExistente.canvas_data.accentColor) setAccentColor(propostaExistente.canvas_data.accentColor);
+      }
+    }
+  }, [propostaExistente]);
+
+  // Cálculo do total da proposta
+  const calculateTotalProposalValue = () => {
+    return blocks.reduce((acc, b) => {
+      if (b.type === 'pricing' && b.data?.items) {
+        const blockSum = b.data.items.reduce((sum, item) => sum + ((parseFloat(item.qty) || 0) * (parseFloat(item.val) || 0)), 0);
+        return acc + blockSum;
+      }
+      return acc;
+    }, 0);
+  };
+
+  // Adicionar Bloco ao Canvas
   const handleAddBlock = (type) => {
     const newId = `b-${Date.now()}`;
     let defaultData = {};
 
     switch (type) {
       case 'cover':
-        defaultData = { title: 'Título da Proposta Comercial', subtitle: 'Subtítulo descritivo', companyName: 'Sua Empresa', clientName: 'Nome do Cliente', date: 'Data Atual' };
+        defaultData = { title: 'TÍTULO DA PROPOSTA COMERCIAL', subtitle: `Preparado para ${clientName}`, companyName: 'PropostaFácil Tech', clientName, logoUrl: '', logoAlign: 'left', logoSize: 100 };
         break;
       case 'summary':
-        defaultData = { heading: 'Resumo Executivo', content: 'Escreva aqui o contexto do projeto e por que sua solução é a ideal para o cliente.' };
+        defaultData = { heading: 'Resumo Executivo', content: 'Descreva a visão geral do projeto e os objetivos estratégicos.' };
         break;
       case 'scope':
-        defaultData = { heading: 'Escopo de Entregáveis', items: ['Entregável 1: Análise e Diagnóstico', 'Entregável 2: Execução Técnica', 'Entregável 3: Relatório Final'] };
+        defaultData = { heading: 'Escopo de Entregáveis', items: ['Diagnóstico e Levantamento de Requisitos', 'Execução Técnica e Configuração', 'Entrega e Suporte'] };
         break;
       case 'pricing':
-        defaultData = { heading: 'Investimento Comercial', items: [{ desc: 'Serviço Principal', qty: 1, val: 5000 }] };
-        break;
-      case 'timeline':
-        defaultData = { heading: 'Cronograma de Execução', items: ['Fase 1: Kickoff (Semana 1)', 'Fase 2: Desenvolvimento (Semanas 2 a 4)', 'Fase 3: Entrega (Semana 5)'] };
+        defaultData = { heading: 'Investimento Comercial', items: [{ desc: 'Serviço Principal de Consultoria', qty: 1, val: 5000 }] };
         break;
       case 'terms':
-        defaultData = { heading: 'Termos & Validade', content: 'Esta proposta tem validade de 15 dias corridos. Condições de pagamento: 50% no aceite e 50% na conclusão.' };
+        defaultData = { heading: 'Termos & Validade', content: 'Esta proposta é válida por 15 dias a contar da data de emissão.' };
         break;
       case 'signature':
-        defaultData = { heading: 'Aceite Digital da Proposta', terms: 'Ao assinar, ambas as partes confirmam o início imediato do escopo acima descrito.' };
+        defaultData = { heading: 'Aceite Digital da Proposta', terms: 'Ao clicar em assinar, ambas as partes confirmam o acordo contratual.' };
         break;
       default:
         break;
     }
 
     const newBlock = { id: newId, type, data: defaultData };
-    setBlocks([...blocks, newBlock]);
-    setSelectedBlockId(newId);
-    toast.success('Bloco adicionado ao Canvas');
+    setBlocks(prev => [...prev, newBlock]);
+    toast.success('Bloco adicionado ao Canvas!');
   };
 
-  // Mover bloco
-  const handleMoveBlock = (index, direction) => {
-    const newBlocks = [...blocks];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-
-    if (targetIndex < 0 || targetIndex >= newBlocks.length) return;
-
-    const temp = newBlocks[index];
-    newBlocks[index] = newBlocks[targetIndex];
-    newBlocks[targetIndex] = temp;
-
-    setBlocks(newBlocks);
+  // Drag & Drop Handlers para reordenação de blocos
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
   };
 
-  // Excluir bloco
-  const handleDeleteBlock = (id) => {
-    if (blocks.length <= 1) {
-      toast.error('O template precisa ter pelo menos 1 bloco.');
-      return;
-    }
-    const filtered = blocks.filter(b => b.id !== id);
-    setBlocks(filtered);
-    if (selectedBlockId === id) {
-      setSelectedBlockId(filtered[0]?.id || null);
-    }
-    toast.success('Bloco removido');
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const updatedBlocks = [...blocks];
+    const itemToMove = updatedBlocks[draggedIndex];
+    updatedBlocks.splice(draggedIndex, 1);
+    updatedBlocks.splice(index, 0, itemToMove);
+
+    setDraggedIndex(index);
+    setBlocks(updatedBlocks);
   };
 
-  // Duplicar bloco
-  const handleDuplicateBlock = (block) => {
-    const newId = `b-${Date.now()}`;
-    const clone = { ...block, id: newId, data: JSON.parse(JSON.stringify(block.data)) };
-    const index = blocks.findIndex(b => b.id === block.id);
-    const newBlocks = [...blocks];
-    newBlocks.splice(index + 1, 0, clone);
-    setBlocks(newBlocks);
-    setSelectedBlockId(newId);
-    toast.success('Bloco duplicado');
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
   };
 
-  // Atualizar campo de dados do bloco selecionado
-  const handleUpdateBlockData = (field, value) => {
+  // Atualizar dados de um bloco específico
+  const updateBlockData = (blockId, field, value) => {
     setBlocks(blocks.map(b => {
-      if (b.id === selectedBlockId) {
+      if (b.id === blockId) {
         return { ...b, data: { ...b.data, [field]: value } };
       }
       return b;
     }));
   };
 
-  // Gerar escopo com IA
-  const handleGenerateAiScope = () => {
-    setIsAiLoading(true);
-    setTimeout(() => {
-      setBlocks(blocks.map(b => {
-        if (b.type === 'scope') {
-          return {
-            ...b,
-            data: {
-              ...b.data,
-              heading: 'Escopo Otimizado por Inteligência Artificial',
-              items: [
-                'Diagnóstico de Arquitetura Comercial e Análise de Gargalos',
-                'Implementação de Sistema SaaS de Alta Conversão',
-                'Desenvolvimento de Templates Personalizados por Nicho',
-                'Treinamento e Capacitação de Liderança de Vendas',
-                'Monitoramento Semanal de KPIs e Taxa de Aceite'
-              ]
-            }
-          };
-        }
-        return b;
-      }));
-      setIsAiLoading(false);
-      toast.success('Escopo enriquecido com IA com sucesso!');
-    }, 1200);
-  };
-
-  // Salvar
-  const handleSave = () => {
-    const payload = { name: templateName, color: accentColor, blocks };
-    if (onSave) {
-      onSave(payload);
-    } else {
-      toast.success('Template salvo com sucesso no Canvas!');
-      navigate('/propostas');
+  // Upload local de imagem/logo para um bloco
+  const handleImageUpload = (blockId, e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateBlockData(blockId, 'logoUrl', reader.result);
+        toast.success('Imagem enviada para a proposta!');
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  // Calcular total de um bloco de tabela de preços
-  const calculateBlockTotal = (items = []) => {
-    return items.reduce((acc, item) => acc + ((parseFloat(item.qty) || 0) * (parseFloat(item.val) || 0)), 0);
+  // Salvar Proposta Comercial no MariaDB Backend
+  const handleSaveProposal = async () => {
+    setIsSaving(true);
+    const toastId = toast.loading('Gravando proposta no banco de dados...');
+
+    try {
+      const valorTotal = calculateTotalProposalValue();
+      const payload = {
+        numero_proposta: templateName.replace(/\s+/g, '-').toUpperCase().slice(0, 15),
+        nome_cliente: clientName || 'Cliente Proposify',
+        email_cliente: clientEmail,
+        valor_total: valorTotal,
+        status: 'rascunho',
+        servico_prestado: blocks.find(b => b.type === 'summary')?.data?.content || 'Proposta montada no Canvas Visual Proposify',
+        canvas_data: {
+          blocks,
+          accentColor,
+          templateName
+        }
+      };
+
+      if (editId) {
+        await base44.entities.Proposta.update(editId, payload);
+      } else {
+        await base44.entities.Proposta.create(payload);
+      }
+
+      await supabase.rpc('increment_usage', { item_type: 'proposta' });
+      queryClient.invalidateQueries({ queryKey: ['propostas'] });
+
+      toast.success('Proposta salva e emitida com sucesso!', { id: toastId });
+      navigate('/propostas');
+    } catch (error) {
+      console.error('Erro ao salvar proposta:', error);
+      toast.error(`Erro ao salvar: ${error.message || 'Falha de rede'}`, { id: toastId });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#090d14] text-[#e2e8f0] flex flex-col font-sans selection:bg-blue-600/30 selection:text-white">
-      {/* ── Top Bar ── */}
-      <header className="h-14 border-b border-[#1b2434] bg-[#0c121e] px-4 flex items-center justify-between z-30">
-        <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-[#0a0a0f] text-[#f0f0f5] flex flex-col font-sans selection:bg-blue-600/30 selection:text-white">
+      
+      {/* ── 1. Header Bar estilo Proposify ── */}
+      <header className="h-16 border-b border-[#1e1e2e] bg-[#111118] px-6 flex items-center justify-between z-30 sticky top-0">
+        <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/propostas')}
-            className="p-1.5 rounded-md hover:bg-white/5 text-[#94a3b8] hover:text-white transition"
+            className="p-2 rounded-lg bg-[#1a1a24] border border-[#1e1e2e] hover:bg-white/10 text-[#8888a0] hover:text-white transition cursor-pointer"
             title="Voltar para Propostas"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <div className="h-4 w-px bg-white/10" />
-          <div className="flex items-center gap-2">
-            <Layout className="w-4 h-4 text-blue-500" />
-            <input
-              type="text"
-              value={templateName}
-              onChange={(e) => setTemplateName(e.target.value)}
-              className="bg-transparent text-sm font-semibold text-white focus:outline-none focus:border-b border-blue-500 px-1 py-0.5"
-            />
+          <div className="h-5 w-px bg-[#1e1e2e]" />
+          <div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                className="bg-transparent text-sm font-semibold text-white focus:outline-none focus:border-b border-blue-600 px-1 py-0.5"
+              />
+              <span className="px-2 py-0.5 text-[10px] font-medium uppercase bg-amber-500/10 text-amber-300 border border-amber-500/20 rounded">
+                DRAFT
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-xs text-[#8888a0] mt-0.5">
+              <span>Cliente: <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} className="bg-transparent text-white font-medium focus:outline-none border-b border-[#1e1e2e]" /></span>
+              <span>•</span>
+              <span className="text-emerald-400 font-semibold tabular-nums">{formatCurrency(calculateTotalProposalValue())}</span>
+              <span>•</span>
+              <span className="text-[11px] text-[#555568]">Salvo no MariaDB</span>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Preset templates dropdown */}
-          <div className="hidden md:flex items-center gap-1.5 bg-[#141c2c] p-1 rounded-lg border border-[#1e293b]">
-            <span className="text-[11px] text-[#94a3b8] px-2 font-medium">Modelos Prontos:</span>
-            {PRESET_TEMPLATES.map(preset => (
-              <button
-                key={preset.id}
-                onClick={() => {
-                  setBlocks(preset.blocks);
-                  setAccentColor(preset.color);
-                  setTemplateName(preset.name);
-                  toast.success(`Modelo "${preset.name}" carregado!`);
-                }}
-                className="px-2.5 py-1 text-xs rounded font-medium text-white hover:bg-white/10 transition"
-              >
-                {preset.name}
-              </button>
-            ))}
-          </div>
-
+        <div className="flex items-center gap-3">
           <button
-            onClick={handleGenerateAiScope}
-            disabled={isAiLoading}
-            className="px-3 py-1.5 rounded-md text-xs font-semibold text-cyan-300 bg-cyan-950/80 border border-cyan-500/30 hover:bg-cyan-900/60 transition flex items-center gap-1.5 cursor-pointer"
+            onClick={() => setShowTutorial(true)}
+            className="p-2 rounded-lg bg-[#1a1a24] text-amber-400 hover:bg-white/10 border border-[#1e1e2e] transition cursor-pointer flex items-center gap-1.5 text-xs font-medium"
+            title="Ver Tutorial Guiado"
           >
-            <Sparkles className={`w-3.5 h-3.5 ${isAiLoading ? 'animate-spin' : ''}`} />
-            <span>{isAiLoading ? 'Gerando...' : 'Preencher por IA'}</span>
+            <HelpCircle className="w-4 h-4" />
+            <span className="hidden sm:inline">Ajuda</span>
           </button>
 
           <button
             onClick={() => setIsPreview(!isPreview)}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 cursor-pointer ${
-              isPreview ? 'bg-blue-600 text-white' : 'bg-[#1b2536] text-[#94a3b8] hover:text-white'
+            className={`px-3 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1.5 cursor-pointer ${
+              isPreview ? 'bg-blue-600 text-white' : 'bg-[#1a1a24] text-[#8888a0] hover:text-white border border-[#1e1e2e]'
             }`}
           >
-            <Eye className="w-3.5 h-3.5" />
+            <Eye className="w-4 h-4" />
             <span>{isPreview ? 'Modo Edição' : 'Pré-visualizar'}</span>
           </button>
 
           <button
-            onClick={handleSave}
-            className="px-4 py-1.5 rounded-md text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 transition shadow-md shadow-blue-600/20 flex items-center gap-1.5 cursor-pointer"
+            onClick={handleSaveProposal}
+            disabled={isSaving}
+            className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
           >
-            <Save className="w-3.5 h-3.5" />
-            <span>Salvar Template</span>
+            <Save className="w-4 h-4" />
+            <span>{isSaving ? 'Salvando...' : 'Salvar e Emitir Proposta'}</span>
           </button>
         </div>
       </header>
 
-      {/* ── Main Canvas Workspace ── */}
+      {/* ── Workspace ── */}
       <div className="flex-1 flex overflow-hidden relative">
 
-        {/* ── Left Panel: Block Library ── */}
+        {/* ── 2. Left Panel: Sections Navigation (Proposify Style) ── */}
         {!isPreview && (
-          <aside className="w-64 border-r border-[#1b2434] bg-[#0c121e] flex flex-col shrink-0">
-            <div className="p-3 border-b border-[#1b2434] flex items-center justify-between">
-              <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                <Plus className="w-3.5 h-3.5 text-blue-400" />
-                Adicionar Blocos
-              </span>
-              <span className="text-[10px] text-[#64748b]">{blocks.length} blocos</span>
+          <aside className="w-64 border-r border-[#1e1e2e] bg-[#111118] flex flex-col shrink-0">
+            <div className="p-4 border-b border-[#1e1e2e] flex items-center justify-between">
+              <span className="text-xs font-medium uppercase tracking-wider text-[#555568]">Seções da Proposta</span>
+              <span className="text-[10px] font-semibold text-[#8888a0] bg-[#1a1a24] px-2 py-0.5 rounded">{blocks.length}</span>
             </div>
 
-            <div className="p-2 space-y-1.5 overflow-y-auto flex-1">
-              {BLOCK_TYPES.map(bt => {
-                const IconComp = bt.icon;
+            <div className="p-3 space-y-2 overflow-y-auto flex-1">
+              {SECTIONS.map((sec) => {
+                const IconComp = sec.icon;
+                const active = activeSection === sec.id;
                 return (
                   <button
-                    key={bt.id}
-                    onClick={() => handleAddBlock(bt.id)}
-                    className="w-full p-2.5 rounded-lg bg-[#111927] border border-[#1b2434] hover:border-blue-500/40 hover:bg-[#162032] text-left transition group flex items-start gap-2.5 cursor-pointer"
+                    key={sec.id}
+                    onClick={() => {
+                      setActiveSection(sec.id);
+                      handleAddBlock(sec.id);
+                    }}
+                    className={`w-full p-3 rounded-lg border transition text-left flex items-center justify-between group cursor-pointer ${
+                      active
+                        ? 'bg-blue-600/10 border-blue-600 text-white'
+                        : 'bg-[#0a0a0f] border-[#1e1e2e] hover:border-[#2a2a3e] text-[#8888a0] hover:text-white'
+                    }`}
                   >
-                    <div className="w-7 h-7 rounded bg-blue-600/10 text-blue-400 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition">
-                      <IconComp className="w-3.5 h-3.5" />
+                    <div className="flex items-center gap-2.5">
+                      <IconComp className={`w-4 h-4 ${active ? 'text-blue-400' : 'text-[#555568]'}`} />
+                      <span className="text-xs font-medium">{sec.name}</span>
                     </div>
-                    <div>
-                      <div className="text-xs font-semibold text-white group-hover:text-blue-300 transition">{bt.name}</div>
-                      <div className="text-[10px] text-[#64748b] leading-tight mt-0.5">{bt.desc}</div>
-                    </div>
+                    <Plus className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-blue-400 transition" />
                   </button>
                 );
               })}
             </div>
+          </aside>
+        )}
 
-            {/* Selector de Cor de Destaque */}
-            <div className="p-3 border-t border-[#1b2434] space-y-2 bg-[#090e17]">
-              <span className="text-xs font-semibold text-white flex items-center gap-1.5">
-                <Palette className="w-3.5 h-3.5 text-cyan-400" /> Cor do Tema
-              </span>
-              <div className="flex items-center gap-2">
-                {['#2563eb', '#10b981', '#7c3aed', '#d97706', '#ec4899', '#06b6d4'].map(color => (
-                  <button
-                    key={color}
-                    onClick={() => setAccentColor(color)}
-                    className={`w-6 h-6 rounded-full transition cursor-pointer border ${accentColor === color ? 'border-white scale-110 shadow-md' : 'border-transparent opacity-70 hover:opacity-100'}`}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
+        {/* ── 3. Central Interactive Canvas Area ── */}
+        <main className="flex-1 bg-[#0a0a0f] overflow-y-auto p-6 md:p-10 flex flex-col items-center">
+          
+          {/* Tutorial Tooltip (Balão flutuante estilo Proposify) */}
+          {showTutorial && (
+            <div className="mb-6 max-w-2xl w-full p-5 rounded-lg bg-[#111118] border border-blue-600/50 shadow-2xl relative animate-in fade-in slide-in-from-top-4 duration-300">
+              <button
+                onClick={() => setShowTutorial(false)}
+                className="absolute top-3 right-3 text-[#555568] hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center text-white shrink-0 font-bold">
+                  {tutorialStep}
+                </div>
+                <div className="space-y-1 flex-1">
+                  <h4 className="text-sm font-semibold text-white tracking-tight">
+                    {tutorialSteps[tutorialStep - 1].title}
+                  </h4>
+                  <p className="text-xs text-[#8888a0] leading-relaxed">
+                    {tutorialSteps[tutorialStep - 1].content}
+                  </p>
+
+                  <div className="pt-3 flex items-center justify-between">
+                    <span className="text-[10px] font-medium text-[#555568] uppercase tracking-wider">
+                      Passo {tutorialStep} de {tutorialSteps.length}
+                    </span>
+
+                    <div className="flex items-center gap-2">
+                      {tutorialStep > 1 && (
+                        <button
+                          onClick={() => setTutorialStep(prev => prev - 1)}
+                          className="px-3 py-1 bg-[#1a1a24] hover:bg-white/10 text-xs font-medium text-[#8888a0] rounded border border-[#1e1e2e] cursor-pointer"
+                        >
+                          Anterior
+                        </button>
+                      )}
+                      {tutorialStep < tutorialSteps.length ? (
+                        <button
+                          onClick={() => setTutorialStep(prev => prev + 1)}
+                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-xs font-medium text-white rounded cursor-pointer"
+                        >
+                          Próximo
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setShowTutorial(false)}
+                          className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-xs font-medium text-white rounded cursor-pointer"
+                        >
+                          Entendi, começar!
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Document Canvas Sheet (Folha de Papel Visual A4) */}
+          <div className="w-full max-w-4xl bg-[#111118] border border-[#1e1e2e] rounded-lg shadow-2xl min-h-[900px] p-8 md:p-12 space-y-8">
+            
+            {blocks.map((block, index) => (
+              <div
+                key={block.id}
+                draggable={!isPreview}
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragEnd={handleDragEnd}
+                className={`relative group rounded-lg p-6 transition-all duration-200 border ${
+                  !isPreview
+                    ? 'border-[#1e1e2e] hover:border-blue-600/60 bg-[#0a0a0f]'
+                    : 'border-transparent bg-transparent'
+                }`}
+              >
+                {/* Drag Handle & Floating Controls */}
+                {!isPreview && (
+                  <div className="absolute left-3 top-3 opacity-0 group-hover:opacity-100 transition flex items-center gap-2 z-10">
+                    <span className="p-1 rounded bg-[#1a1a24] border border-[#1e1e2e] text-[#8888a0] cursor-grab active:cursor-grabbing" title="Clique e arraste para reordenar">
+                      <GripVertical className="w-4 h-4" />
+                    </span>
+                    <span className="text-[10px] font-medium uppercase bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded">
+                      {block.type}
+                    </span>
+                  </div>
+                )}
+
+                {!isPreview && (
+                  <div className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition flex items-center gap-1 z-10">
+                    <button
+                      onClick={() => {
+                        const updated = blocks.filter(b => b.id !== block.id);
+                        setBlocks(updated);
+                        toast.success('Bloco removido!');
+                      }}
+                      className="p-1.5 rounded bg-[#1a1a24] text-rose-400 hover:bg-rose-500/10 border border-[#1e1e2e] transition"
+                      title="Excluir bloco"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                {/* ── BLOCO 1: COVER ── */}
+                {block.type === 'cover' && (
+                  <div className={`p-8 md:p-12 rounded-lg border text-white space-y-6 transition duration-300 ${
+                    block.data.coverTheme === 'purple'
+                      ? 'bg-gradient-to-br from-[#2e1065] to-[#0a0a0f] border-purple-900/40'
+                      : block.data.coverTheme === 'emerald'
+                      ? 'bg-gradient-to-br from-[#064e3b] to-[#0a0a0f] border-emerald-900/40'
+                      : block.data.coverTheme === 'slate'
+                      ? 'bg-gradient-to-br from-[#1e293b] to-[#0a0a0f] border-slate-700/40'
+                      : 'bg-gradient-to-br from-[#1b2a4a] to-[#0a0a0f] border-blue-900/40'
+                  }`}>
+                    {/* Controles de Estilo de Capa e Logo (no modo edição) */}
+                    {!isPreview && (
+                      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-[#0a0a0f]/80 border border-white/10 text-xs">
+                        <div className="flex items-center gap-2">
+                          <Palette className="w-3.5 h-3.5 text-blue-400" />
+                          <span className="text-[11px] font-medium text-[#8888a0]">Tema da Capa:</span>
+                          <div className="flex items-center gap-1">
+                            {[
+                              { id: 'blue', name: 'Azul B2B', color: 'bg-blue-600' },
+                              { id: 'purple', name: 'Roxo SaaS', color: 'bg-purple-600' },
+                              { id: 'emerald', name: 'Verde Executivo', color: 'bg-emerald-600' },
+                              { id: 'slate', name: 'Cinza Corporativo', color: 'bg-slate-700' },
+                            ].map(t => (
+                              <button
+                                key={t.id}
+                                onClick={() => updateBlockData(block.id, 'coverTheme', t.id)}
+                                className={`w-4 h-4 rounded-full ${t.color} border border-white/20 cursor-pointer ${
+                                  block.data.coverTheme === t.id ? 'ring-2 ring-white scale-110' : ''
+                                }`}
+                                title={t.name}
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Alinhamento da Logo */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-medium text-[#8888a0]">Alinhamento Logo:</span>
+                          <div className="flex items-center gap-1 bg-[#1a1a24] p-0.5 rounded border border-[#1e1e2e]">
+                            <button
+                              onClick={() => updateBlockData(block.id, 'logoAlign', 'left')}
+                              className={`p-1 rounded text-xs ${block.data.logoAlign === 'left' || !block.data.logoAlign ? 'bg-blue-600 text-white' : 'text-[#8888a0]'}`}
+                            >
+                              <AlignLeft className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => updateBlockData(block.id, 'logoAlign', 'center')}
+                              className={`p-1 rounded text-xs ${block.data.logoAlign === 'center' ? 'bg-blue-600 text-white' : 'text-[#8888a0]'}`}
+                            >
+                              <AlignCenter className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => updateBlockData(block.id, 'logoAlign', 'right')}
+                              className={`p-1 rounded text-xs ${block.data.logoAlign === 'right' ? 'bg-blue-600 text-white' : 'text-[#8888a0]'}`}
+                            >
+                              <AlignRight className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Logo Display & Position */}
+                    <div className="border-b border-white/10 pb-6">
+                      <div className={`flex flex-col items-${
+                        block.data.logoAlign === 'center'
+                          ? 'center'
+                          : block.data.logoAlign === 'right'
+                          ? 'end'
+                          : 'start'
+                      } space-y-2`}>
+                        {block.data.logoUrl ? (
+                          <img
+                            src={block.data.logoUrl}
+                            alt="Logo da Marca"
+                            style={{ width: `${block.data.logoSize || 140}px` }}
+                            className="object-contain max-h-28 rounded p-1 bg-white/5 border border-white/10"
+                          />
+                        ) : (
+                          <div className="flex items-center gap-2 text-xs text-[#8888a0]">
+                            <ImageIcon className="w-5 h-5 text-blue-400" />
+                            <span>Logo da Marca / Empresa</span>
+                          </div>
+                        )}
+
+                        {!isPreview && (
+                          <div className="flex items-center gap-3 pt-1">
+                            <label className="px-3 py-1 rounded bg-[#1a1a24] border border-[#1e1e2e] text-xs font-medium text-[#8888a0] hover:text-white cursor-pointer flex items-center gap-1.5 transition">
+                              <Upload className="w-3.5 h-3.5 text-blue-400" />
+                              <span>{block.data.logoUrl ? 'Alterar Logo' : 'Fazer Upload da Logo'}</span>
+                              <input type="file" accept="image/*" onChange={(e) => handleImageUpload(block.id, e)} className="hidden" />
+                            </label>
+
+                            {block.data.logoUrl && (
+                              <div className="flex items-center gap-1 text-[11px] text-[#8888a0]">
+                                <span>Tamanho:</span>
+                                <input
+                                  type="range"
+                                  min="60"
+                                  max="260"
+                                  value={block.data.logoSize || 140}
+                                  onChange={(e) => updateBlockData(block.id, 'logoSize', e.target.value)}
+                                  className="w-20 accent-blue-600 cursor-pointer"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-4">
+                      <input
+                        type="text"
+                        disabled={isPreview}
+                        value={block.data.title}
+                        onChange={(e) => updateBlockData(block.id, 'title', e.target.value)}
+                        className="w-full bg-transparent text-2xl md:text-4xl font-extrabold text-white tracking-tight focus:outline-none border-b border-transparent focus:border-blue-500"
+                        placeholder="TÍTULO DA PROPOSTA"
+                      />
+                      <input
+                        type="text"
+                        disabled={isPreview}
+                        value={block.data.subtitle}
+                        onChange={(e) => updateBlockData(block.id, 'subtitle', e.target.value)}
+                        className="w-full bg-transparent text-sm md:text-base font-medium text-emerald-400 focus:outline-none border-b border-transparent focus:border-emerald-500"
+                        placeholder="Subtítulo ou nome do cliente"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* ── BLOCO 2: SUMMARY ── */}
+                {block.type === 'summary' && (
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      disabled={isPreview}
+                      value={block.data.heading}
+                      onChange={(e) => updateBlockData(block.id, 'heading', e.target.value)}
+                      className="w-full bg-transparent text-lg font-semibold text-white tracking-tight focus:outline-none border-b border-transparent focus:border-blue-600"
+                    />
+                    <textarea
+                      disabled={isPreview}
+                      value={block.data.content}
+                      onChange={(e) => updateBlockData(block.id, 'content', e.target.value)}
+                      rows={3}
+                      className="w-full bg-transparent text-xs text-[#8888a0] leading-relaxed focus:outline-none border border-transparent focus:border-[#1e1e2e] rounded p-1"
+                    />
+                  </div>
+                )}
+
+                {/* ── BLOCO 3: SCOPE ── */}
+                {block.type === 'scope' && (
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      disabled={isPreview}
+                      value={block.data.heading}
+                      onChange={(e) => updateBlockData(block.id, 'heading', e.target.value)}
+                      className="w-full bg-transparent text-lg font-semibold text-white tracking-tight focus:outline-none border-b border-transparent focus:border-blue-600"
+                    />
+                    <ul className="space-y-2">
+                      {block.data.items?.map((item, i) => (
+                        <li key={i} className="flex items-start gap-2.5 text-xs text-[#8888a0]">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                          <input
+                            type="text"
+                            disabled={isPreview}
+                            value={item}
+                            onChange={(e) => {
+                              const updated = [...block.data.items];
+                              updated[i] = e.target.value;
+                              updateBlockData(block.id, 'items', updated);
+                            }}
+                            className="w-full bg-transparent text-xs text-[#8888a0] focus:outline-none focus:text-white border-b border-transparent focus:border-blue-600"
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* ── BLOCO 4: PRICING ── */}
+                {block.type === 'pricing' && (
+                  <div className="space-y-4">
+                    <input
+                      type="text"
+                      disabled={isPreview}
+                      value={block.data.heading}
+                      onChange={(e) => updateBlockData(block.id, 'heading', e.target.value)}
+                      className="w-full bg-transparent text-lg font-semibold text-white tracking-tight focus:outline-none border-b border-transparent focus:border-blue-600"
+                    />
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-[#1e1e2e] text-[#555568] uppercase text-[10px] tracking-wider">
+                            <th className="pb-2">Descrição do Item</th>
+                            <th className="pb-2 w-20 text-center">Qtd</th>
+                            <th className="pb-2 w-32 text-right">Valor Unit.</th>
+                            <th className="pb-2 w-32 text-right">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#1e1e2e]">
+                          {block.data.items?.map((item, idx) => (
+                            <tr key={idx}>
+                              <td className="py-2.5 pr-2">
+                                <input
+                                  type="text"
+                                  disabled={isPreview}
+                                  value={item.desc}
+                                  onChange={(e) => {
+                                    const updated = [...block.data.items];
+                                    updated[idx].desc = e.target.value;
+                                    updateBlockData(block.id, 'items', updated);
+                                  }}
+                                  className="w-full bg-transparent text-xs text-white focus:outline-none"
+                                />
+                              </td>
+                              <td className="py-2.5 text-center">
+                                <input
+                                  type="number"
+                                  disabled={isPreview}
+                                  value={item.qty}
+                                  onChange={(e) => {
+                                    const updated = [...block.data.items];
+                                    updated[idx].qty = parseFloat(e.target.value) || 0;
+                                    updateBlockData(block.id, 'items', updated);
+                                  }}
+                                  className="w-16 bg-[#1a1a24] border border-[#1e1e2e] rounded px-1.5 py-0.5 text-center text-xs text-white focus:outline-none"
+                                />
+                              </td>
+                              <td className="py-2.5 text-right">
+                                <input
+                                  type="number"
+                                  disabled={isPreview}
+                                  value={item.val}
+                                  onChange={(e) => {
+                                    const updated = [...block.data.items];
+                                    updated[idx].val = parseFloat(e.target.value) || 0;
+                                    updateBlockData(block.id, 'items', updated);
+                                  }}
+                                  className="w-24 bg-[#1a1a24] border border-[#1e1e2e] rounded px-1.5 py-0.5 text-right text-xs text-white focus:outline-none"
+                                />
+                              </td>
+                              <td className="py-2.5 text-right font-semibold text-emerald-400 tabular-nums">
+                                {formatCurrency((item.qty || 0) * (item.val || 0))}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="pt-3 border-t border-[#1e1e2e] flex items-center justify-between">
+                      <span className="text-xs font-medium uppercase tracking-wider text-[#555568]">Total Investimento</span>
+                      <span className="text-xl font-semibold text-emerald-400 tabular-nums">
+                        {formatCurrency(block.data.items?.reduce((acc, i) => acc + ((i.qty || 0) * (i.val || 0)), 0))}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── BLOCO 5: TERMS ── */}
+                {block.type === 'terms' && (
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      disabled={isPreview}
+                      value={block.data.heading}
+                      onChange={(e) => updateBlockData(block.id, 'heading', e.target.value)}
+                      className="w-full bg-transparent text-lg font-semibold text-white tracking-tight focus:outline-none border-b border-transparent focus:border-blue-600"
+                    />
+                    <textarea
+                      disabled={isPreview}
+                      value={block.data.content}
+                      onChange={(e) => updateBlockData(block.id, 'content', e.target.value)}
+                      rows={3}
+                      className="w-full bg-transparent text-xs text-[#8888a0] leading-relaxed focus:outline-none border border-transparent focus:border-[#1e1e2e] rounded p-1"
+                    />
+                  </div>
+                )}
+
+                {/* ── BLOCO 6: SIGNATURE ── */}
+                {block.type === 'signature' && (
+                  <div className="p-6 rounded-lg bg-[#0a0a0f] border border-[#1e1e2e] space-y-4">
+                    <h4 className="text-sm font-semibold text-white tracking-tight">{block.data.heading}</h4>
+                    <p className="text-xs text-[#8888a0]">{block.data.terms}</p>
+                    <div className="pt-4 border-t border-dashed border-[#1e1e2e] flex items-center justify-between text-xs text-[#555568]">
+                      <span>Carimbo de Aceite Digital PropostaFácil</span>
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium text-[10px] uppercase">
+                        Aguardando Assinatura
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            ))}
+
+          </div>
+        </main>
+
+        {/* ── 4. Right Panel: Build & Tool Drawer (Proposify Style) ── */}
+        {!isPreview && (
+          <aside className="w-72 border-l border-[#1e1e2e] bg-[#111118] flex flex-col shrink-0">
+            <div className="p-4 border-b border-[#1e1e2e] flex items-center justify-between">
+              <span className="text-xs font-medium uppercase tracking-wider text-[#555568]">Build / Ferramentas</span>
+            </div>
+
+            <div className="p-4 space-y-4 overflow-y-auto flex-1">
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  onClick={() => handleAddBlock('summary')}
+                  className="p-3 rounded-lg bg-[#0a0a0f] border border-[#1e1e2e] hover:border-blue-600 transition flex flex-col items-center justify-center text-center gap-1.5 cursor-pointer group"
+                >
+                  <Type className="w-5 h-5 text-blue-400 group-hover:scale-110 transition" />
+                  <span className="text-xs font-medium text-white">Texto</span>
+                </button>
+
+                <button
+                  onClick={() => handleAddBlock('cover')}
+                  className="p-3 rounded-lg bg-[#0a0a0f] border border-[#1e1e2e] hover:border-blue-600 transition flex flex-col items-center justify-center text-center gap-1.5 cursor-pointer group"
+                >
+                  <ImageIcon className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition" />
+                  <span className="text-xs font-medium text-white">Imagem / Logo</span>
+                </button>
+
+                <button
+                  onClick={() => handleAddBlock('pricing')}
+                  className="p-3 rounded-lg bg-[#0a0a0f] border border-[#1e1e2e] hover:border-blue-600 transition flex flex-col items-center justify-center text-center gap-1.5 cursor-pointer group"
+                >
+                  <DollarSign className="w-5 h-5 text-amber-400 group-hover:scale-110 transition" />
+                  <span className="text-xs font-medium text-white">Tabela Preços</span>
+                </button>
+
+                <button
+                  onClick={() => handleAddBlock('signature')}
+                  className="p-3 rounded-lg bg-[#0a0a0f] border border-[#1e1e2e] hover:border-blue-600 transition flex flex-col items-center justify-center text-center gap-1.5 cursor-pointer group"
+                >
+                  <CheckCircle2 className="w-5 h-5 text-purple-400 group-hover:scale-110 transition" />
+                  <span className="text-xs font-medium text-white">Assinatura</span>
+                </button>
+              </div>
+
+              {/* Botão de Preenchimento por IA Copilot */}
+              <div className="pt-4 border-t border-[#1e1e2e]">
+                <button
+                  onClick={() => {
+                    toast.info('IA gerando e otimizando o escopo comercial...');
+                    setTimeout(() => {
+                      setBlocks(prev => prev.map(b => {
+                        if (b.type === 'scope') {
+                          return {
+                            ...b,
+                            data: {
+                              ...b.data,
+                              heading: 'Escopo Otimizado por Inteligência Artificial',
+                              items: [
+                                'Diagnóstico de Arquitetura Comercial e Levantamento de Requisitos',
+                                'Configuração de Editor Canvas Drag & Drop para Propostas',
+                                'Treinamento e Capacitação da Equipe Comercial',
+                                'Monitoramento e Rastreamento de Aceites Digitais'
+                              ]
+                            }
+                          };
+                        }
+                        return b;
+                      }));
+                      toast.success('Escopo preenchido com IA!');
+                    }, 1000);
+                  }}
+                  className="w-full py-2.5 px-3 rounded-lg bg-blue-600/10 border border-blue-500/20 text-blue-400 hover:bg-blue-600 hover:text-white transition flex items-center justify-center gap-2 text-xs font-medium cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Assistente IA Copilot</span>
+                </button>
               </div>
             </div>
           </aside>
         )}
 
-        {/* ── Center Panel: Document Canvas Sheet ── */}
-        <main className="flex-1 bg-[#05080e] overflow-y-auto p-4 md:p-8 flex justify-center">
-          <div className="w-full max-w-3xl bg-[#0f172a] border border-[#1e293b] rounded-xl shadow-2xl overflow-hidden min-h-[850px] flex flex-col justify-between my-auto">
-            
-            {/* Cabeçalho superior da folha do documento */}
-            <div className="h-2" style={{ backgroundColor: accentColor }} />
-
-            <div className="p-6 md:p-10 space-y-8 flex-1">
-              {blocks.map((block, idx) => {
-                const isSelected = selectedBlockId === block.id && !isPreview;
-
-                return (
-                  <div
-                    key={block.id}
-                    onClick={() => !isPreview && setSelectedBlockId(block.id)}
-                    className={`relative rounded-lg transition-all duration-200 ${
-                      isPreview 
-                        ? 'p-2'
-                        : isSelected 
-                          ? 'ring-2 ring-blue-500 bg-[#162032]/80 p-4 shadow-lg' 
-                          : 'p-4 hover:bg-[#141d2d]/50 border border-dashed border-[#1e293b] cursor-pointer'
-                    }`}
-                  >
-                    {/* Barra de ações do bloco (no modo edição) */}
-                    {!isPreview && isSelected && (
-                      <div className="absolute -top-3.5 right-3 bg-[#1e293b] border border-[#334155] rounded-md px-2 py-1 flex items-center gap-1 shadow-md z-20 text-xs">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleMoveBlock(idx, 'up'); }}
-                          disabled={idx === 0}
-                          className="p-1 hover:text-white text-[#94a3b8] disabled:opacity-30"
-                          title="Subir bloco"
-                        >
-                          <ArrowUp className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleMoveBlock(idx, 'down'); }}
-                          disabled={idx === blocks.length - 1}
-                          className="p-1 hover:text-white text-[#94a3b8] disabled:opacity-30"
-                          title="Descer bloco"
-                        >
-                          <ArrowDown className="w-3 h-3" />
-                        </button>
-                        <div className="h-3 w-px bg-white/10" />
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDuplicateBlock(block); }}
-                          className="p-1 hover:text-white text-[#94a3b8]"
-                          title="Duplicar"
-                        >
-                          <Copy className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDeleteBlock(block.id); }}
-                          className="p-1 hover:text-red-400 text-[#94a3b8]"
-                          title="Remover"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Renderização do conteúdo por tipo de bloco */}
-                    {block.type === 'cover' && (
-                      <div className="space-y-4 py-4 border-b border-[#1e293b]">
-                        <div className="text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded inline-block text-white" style={{ backgroundColor: accentColor }}>
-                          {block.data.companyName || 'Sua Empresa'}
-                        </div>
-                        <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-tight">
-                          {block.data.title}
-                        </h1>
-                        <p className="text-sm text-[#94a3b8] font-medium">{block.data.subtitle}</p>
-                        <div className="pt-4 flex flex-wrap gap-4 text-xs text-[#64748b]">
-                          <div>Cliente: <span className="text-white font-semibold">{block.data.clientName}</span></div>
-                          <div>Data: <span className="text-white font-semibold">{block.data.date}</span></div>
-                        </div>
-                      </div>
-                    )}
-
-                    {block.type === 'summary' && (
-                      <div className="space-y-2">
-                        <h3 className="text-lg font-bold text-white tracking-tight" style={{ color: accentColor }}>
-                          {block.data.heading}
-                        </h3>
-                        <p className="text-sm text-[#cbd5e1] leading-relaxed whitespace-pre-line">
-                          {block.data.content}
-                        </p>
-                      </div>
-                    )}
-
-                    {block.type === 'scope' && (
-                      <div className="space-y-3">
-                        <h3 className="text-lg font-bold text-white tracking-tight" style={{ color: accentColor }}>
-                          {block.data.heading}
-                        </h3>
-                        <div className="grid grid-cols-1 gap-2 pt-1">
-                          {(block.data.items || []).map((item, i) => (
-                            <div key={i} className="flex items-start gap-2.5 p-2.5 rounded bg-[#131c2e] border border-[#1e293b]">
-                              <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" style={{ color: accentColor }} />
-                              <span className="text-xs text-[#e2e8f0] font-medium">{item}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {block.type === 'pricing' && (
-                      <div className="space-y-3">
-                        <h3 className="text-lg font-bold text-white tracking-tight" style={{ color: accentColor }}>
-                          {block.data.heading}
-                        </h3>
-                        <div className="overflow-x-auto rounded-lg border border-[#1e293b] bg-[#111827]">
-                          <table className="w-full text-left text-xs">
-                            <thead className="bg-[#1e293b] text-[#94a3b8]">
-                              <tr>
-                                <th className="p-2.5">Item / Descrição</th>
-                                <th className="p-2.5 text-center">Qtd</th>
-                                <th className="p-2.5 text-right">Valor Unitário</th>
-                                <th className="p-2.5 text-right">Subtotal</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[#1e293b]">
-                              {(block.data.items || []).map((item, i) => {
-                                const sub = (parseFloat(item.qty) || 0) * (parseFloat(item.val) || 0);
-                                return (
-                                  <tr key={i} className="hover:bg-white/5 text-[#e2e8f0]">
-                                    <td className="p-2.5 font-medium">{item.desc}</td>
-                                    <td className="p-2.5 text-center">{item.qty}</td>
-                                    <td className="p-2.5 text-right">R$ {(parseFloat(item.val) || 0).toLocaleString('pt-BR')}</td>
-                                    <td className="p-2.5 text-right font-bold text-white">R$ {sub.toLocaleString('pt-BR')}</td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                        <div className="flex justify-between items-center p-3 rounded-lg bg-[#141e30] border border-[#1e293b]">
-                          <span className="text-xs font-semibold text-[#94a3b8]">Investimento Total Estimado:</span>
-                          <span className="text-lg font-extrabold text-white" style={{ color: accentColor }}>
-                            R$ {calculateBlockTotal(block.data.items).toLocaleString('pt-BR')}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    {block.type === 'timeline' && (
-                      <div className="space-y-3">
-                        <h3 className="text-lg font-bold text-white tracking-tight" style={{ color: accentColor }}>
-                          {block.data.heading}
-                        </h3>
-                        <div className="space-y-2 pl-2 border-l-2" style={{ borderColor: accentColor }}>
-                          {(block.data.items || []).map((step, i) => (
-                            <div key={i} className="text-xs text-[#cbd5e1] font-medium pl-3 relative">
-                              <span className="w-2 h-2 rounded-full absolute -left-[17px] top-1" style={{ backgroundColor: accentColor }} />
-                              {step}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {block.type === 'terms' && (
-                      <div className="space-y-2 p-3 rounded-lg bg-[#111927] border border-[#1e293b]">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-white" style={{ color: accentColor }}>
-                          {block.data.heading}
-                        </h4>
-                        <p className="text-xs text-[#94a3b8] leading-relaxed">
-                          {block.data.content}
-                        </p>
-                      </div>
-                    )}
-
-                    {block.type === 'signature' && (
-                      <div className="space-y-4 pt-4 border-t border-[#1e293b]">
-                        <h4 className="text-sm font-bold text-white">{block.data.heading}</h4>
-                        <p className="text-xs text-[#64748b] leading-relaxed">{block.data.terms}</p>
-                        <div className="p-4 rounded-lg bg-[#131c2e] border border-blue-500/30 flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <span className="text-xs font-bold text-white block">Aceite Digital Pendente</span>
-                            <span className="text-[10px] text-[#94a3b8]">Será gravado com IP, Nome e Registro Temporal</span>
-                          </div>
-                          <div className="px-3 py-1.5 rounded text-xs font-semibold text-white bg-blue-600 opacity-90 cursor-not-allowed">
-                            Assinar Proposta
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Rodapé da folha */}
-            <div className="p-4 border-t border-[#1e293b] bg-[#0c121e] flex items-center justify-between text-[11px] text-[#64748b]">
-              <span>Documento gerado via PropostaFácil</span>
-              <span>Página 1 de 1</span>
-            </div>
-          </div>
-        </main>
-
-        {/* ── Right Panel: Selected Block Inspector ── */}
-        {!isPreview && selectedBlock && (
-          <aside className="w-72 border-l border-[#1b2434] bg-[#0c121e] flex flex-col shrink-0">
-            <div className="p-3 border-b border-[#1b2434] flex items-center justify-between">
-              <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                <Sliders className="w-3.5 h-3.5 text-blue-400" />
-                Editar Conteúdo
-              </span>
-              <span className="text-[10px] uppercase font-bold text-blue-400 px-1.5 py-0.5 bg-blue-500/10 rounded">
-                {selectedBlock.type}
-              </span>
-            </div>
-
-            <div className="p-4 space-y-4 overflow-y-auto flex-1 text-xs">
-              {/* Controles para Cover */}
-              {selectedBlock.type === 'cover' && (
-                <>
-                  <div className="space-y-1">
-                    <label className="text-[#94a3b8] font-medium">Nome da Empresa</label>
-                    <input
-                      type="text"
-                      value={selectedBlock.data.companyName || ''}
-                      onChange={(e) => handleUpdateBlockData('companyName', e.target.value)}
-                      className="w-full p-2 rounded bg-[#141d2d] border border-[#1e293b] text-white focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[#94a3b8] font-medium">Título Principal</label>
-                    <textarea
-                      rows={2}
-                      value={selectedBlock.data.title || ''}
-                      onChange={(e) => handleUpdateBlockData('title', e.target.value)}
-                      className="w-full p-2 rounded bg-[#141d2d] border border-[#1e293b] text-white focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[#94a3b8] font-medium">Subtítulo</label>
-                    <input
-                      type="text"
-                      value={selectedBlock.data.subtitle || ''}
-                      onChange={(e) => handleUpdateBlockData('subtitle', e.target.value)}
-                      className="w-full p-2 rounded bg-[#141d2d] border border-[#1e293b] text-white focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[#94a3b8] font-medium">Nome do Cliente</label>
-                    <input
-                      type="text"
-                      value={selectedBlock.data.clientName || ''}
-                      onChange={(e) => handleUpdateBlockData('clientName', e.target.value)}
-                      className="w-full p-2 rounded bg-[#141d2d] border border-[#1e293b] text-white focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Controles para Summary & Terms */}
-              {(selectedBlock.type === 'summary' || selectedBlock.type === 'terms') && (
-                <>
-                  <div className="space-y-1">
-                    <label className="text-[#94a3b8] font-medium">Título da Seção</label>
-                    <input
-                      type="text"
-                      value={selectedBlock.data.heading || ''}
-                      onChange={(e) => handleUpdateBlockData('heading', e.target.value)}
-                      className="w-full p-2 rounded bg-[#141d2d] border border-[#1e293b] text-white focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[#94a3b8] font-medium">Texto do Conteúdo</label>
-                    <textarea
-                      rows={6}
-                      value={selectedBlock.data.content || ''}
-                      onChange={(e) => handleUpdateBlockData('content', e.target.value)}
-                      className="w-full p-2 rounded bg-[#141d2d] border border-[#1e293b] text-white focus:outline-none focus:border-blue-500 leading-relaxed"
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Controles para Escopo & Timeline */}
-              {(selectedBlock.type === 'scope' || selectedBlock.type === 'timeline') && (
-                <>
-                  <div className="space-y-1">
-                    <label className="text-[#94a3b8] font-medium">Título da Seção</label>
-                    <input
-                      type="text"
-                      value={selectedBlock.data.heading || ''}
-                      onChange={(e) => handleUpdateBlockData('heading', e.target.value)}
-                      className="w-full p-2 rounded bg-[#141d2d] border border-[#1e293b] text-white focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[#94a3b8] font-medium block">Itens da Lista ({selectedBlock.data.items?.length || 0})</label>
-                    {(selectedBlock.data.items || []).map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-1.5">
-                        <input
-                          type="text"
-                          value={item}
-                          onChange={(e) => {
-                            const newItems = [...selectedBlock.data.items];
-                            newItems[idx] = e.target.value;
-                            handleUpdateBlockData('items', newItems);
-                          }}
-                          className="flex-1 p-1.5 rounded bg-[#141d2d] border border-[#1e293b] text-white focus:outline-none focus:border-blue-500 text-xs"
-                        />
-                        <button
-                          onClick={() => {
-                            const newItems = selectedBlock.data.items.filter((_, i) => i !== idx);
-                            handleUpdateBlockData('items', newItems);
-                          }}
-                          className="p-1 text-red-400 hover:bg-white/5 rounded"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => {
-                        const newItems = [...(selectedBlock.data.items || []), 'Novo item de entregável'];
-                        handleUpdateBlockData('items', newItems);
-                      }}
-                      className="w-full py-1.5 text-xs font-semibold text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded hover:bg-blue-500/20 transition flex items-center justify-center gap-1"
-                    >
-                      <Plus className="w-3 h-3" /> Adicionar Item
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {/* Controles para Tabela de Preços */}
-              {selectedBlock.type === 'pricing' && (
-                <>
-                  <div className="space-y-1">
-                    <label className="text-[#94a3b8] font-medium">Título da Tabela</label>
-                    <input
-                      type="text"
-                      value={selectedBlock.data.heading || ''}
-                      onChange={(e) => handleUpdateBlockData('heading', e.target.value)}
-                      className="w-full p-2 rounded bg-[#141d2d] border border-[#1e293b] text-white focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <label className="text-[#94a3b8] font-medium block">Linhas de Preço</label>
-                    {(selectedBlock.data.items || []).map((item, idx) => (
-                      <div key={idx} className="p-2 rounded bg-[#141d2d] border border-[#1e293b] space-y-1.5">
-                        <input
-                          type="text"
-                          placeholder="Descrição"
-                          value={item.desc}
-                          onChange={(e) => {
-                            const newItems = [...selectedBlock.data.items];
-                            newItems[idx].desc = e.target.value;
-                            handleUpdateBlockData('items', newItems);
-                          }}
-                          className="w-full p-1 rounded bg-[#0f172a] border border-[#1e293b] text-white text-xs"
-                        />
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            placeholder="Qtd"
-                            value={item.qty}
-                            onChange={(e) => {
-                              const newItems = [...selectedBlock.data.items];
-                              newItems[idx].qty = parseFloat(e.target.value) || 0;
-                              handleUpdateBlockData('items', newItems);
-                            }}
-                            className="w-16 p-1 rounded bg-[#0f172a] border border-[#1e293b] text-white text-xs"
-                          />
-                          <input
-                            type="number"
-                            placeholder="Valor"
-                            value={item.val}
-                            onChange={(e) => {
-                              const newItems = [...selectedBlock.data.items];
-                              newItems[idx].val = parseFloat(e.target.value) || 0;
-                              handleUpdateBlockData('items', newItems);
-                            }}
-                            className="flex-1 p-1 rounded bg-[#0f172a] border border-[#1e293b] text-white text-xs"
-                          />
-                          <button
-                            onClick={() => {
-                              const newItems = selectedBlock.data.items.filter((_, i) => i !== idx);
-                              handleUpdateBlockData('items', newItems);
-                            }}
-                            className="p-1 text-red-400 hover:bg-white/5 rounded"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => {
-                        const newItems = [...(selectedBlock.data.items || []), { desc: 'Novo Serviço', qty: 1, val: 1000 }];
-                        handleUpdateBlockData('items', newItems);
-                      }}
-                      className="w-full py-1.5 text-xs font-semibold text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded hover:bg-blue-500/20 transition flex items-center justify-center gap-1"
-                    >
-                      <Plus className="w-3 h-3" /> Adicionar Linha de Valor
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </aside>
-        )}
       </div>
     </div>
   );
 }
+
+export default ProposalCanvasEditor;

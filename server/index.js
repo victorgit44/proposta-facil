@@ -659,7 +659,7 @@ app.get('/api/propostas', authenticateToken, async (req, res) => {
 app.get('/api/propostas/:id', authenticateToken, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, user_id, numero_proposta, nome_cliente, email_cliente, telefone_cliente, empresa_cliente, servico_prestado, prazo_entrega, observacoes, status, validade, itens, valor_total, created_date FROM propostas WHERE id = ? AND user_id = ?',
+      'SELECT id, user_id, numero_proposta, nome_cliente, email_cliente, telefone_cliente, empresa_cliente, servico_prestado, prazo_entrega, observacoes, status, validade, itens, canvas_data, valor_total, created_date FROM propostas WHERE id = ? AND user_id = ?',
       [req.params.id, req.user.id]
     );
 
@@ -667,6 +667,7 @@ app.get('/api/propostas/:id', authenticateToken, async (req, res) => {
 
     const proposta = rows[0];
     proposta.itens = typeof proposta.itens === 'string' ? JSON.parse(proposta.itens || '[]') : (proposta.itens || []);
+    proposta.canvas_data = typeof proposta.canvas_data === 'string' ? JSON.parse(proposta.canvas_data || 'null') : (proposta.canvas_data || null);
     return res.json(proposta);
   } catch (error) {
     return handleServerError(res, error, 'Erro ao buscar proposta.');
@@ -677,11 +678,12 @@ app.post('/api/propostas', authenticateToken, async (req, res) => {
   try {
     const data = req.body;
     const itensJson = JSON.stringify(data.itens || []);
+    const canvasDataJson = data.canvas_data ? JSON.stringify(data.canvas_data) : null;
 
     const [result] = await pool.query(
       `INSERT INTO propostas 
-       (user_id, numero_proposta, nome_cliente, email_cliente, telefone_cliente, empresa_cliente, servico_prestado, prazo_entrega, observacoes, status, validade, itens, valor_total)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (user_id, numero_proposta, nome_cliente, email_cliente, telefone_cliente, empresa_cliente, servico_prestado, prazo_entrega, observacoes, status, validade, itens, canvas_data, valor_total)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         req.user.id,
         data.numero_proposta || `PROP-${Date.now().toString().slice(-6)}`,
@@ -695,6 +697,7 @@ app.post('/api/propostas', authenticateToken, async (req, res) => {
         data.status || 'rascunho',
         data.validade || '',
         itensJson,
+        canvasDataJson,
         parseFloat(data.valor_total) || 0
       ]
     );
@@ -709,15 +712,16 @@ app.put('/api/propostas/:id', authenticateToken, async (req, res) => {
   try {
     const data = req.body;
     const itensJson = JSON.stringify(data.itens || []);
+    const canvasDataJson = data.canvas_data ? JSON.stringify(data.canvas_data) : null;
 
     const [result] = await pool.query(
       `UPDATE propostas SET
        numero_proposta = ?, nome_cliente = ?, email_cliente = ?, telefone_cliente = ?, empresa_cliente = ?,
-       servico_prestado = ?, prazo_entrega = ?, observacoes = ?, status = ?, validade = ?, itens = ?, valor_total = ?
+       servico_prestado = ?, prazo_entrega = ?, observacoes = ?, status = ?, validade = ?, itens = ?, canvas_data = ?, valor_total = ?
        WHERE id = ? AND user_id = ?`,
       [
         data.numero_proposta, data.nome_cliente, data.email_cliente, data.telefone_cliente, data.empresa_cliente,
-        data.servico_prestado, data.prazo_entrega, data.observacoes, data.status, data.validade, itensJson, parseFloat(data.valor_total) || 0,
+        data.servico_prestado, data.prazo_entrega, data.observacoes, data.status, data.validade, itensJson, canvasDataJson, parseFloat(data.valor_total) || 0,
         req.params.id, req.user.id
       ]
     );
@@ -938,6 +942,187 @@ app.post('/api/usage/increment', authenticateToken, async (req, res) => {
     return res.json({ success: true });
   } catch (error) {
     return handleServerError(res, error, 'Erro ao registrar incremento de uso.');
+  }
+});
+
+// ==========================================
+// ROTAS DO CATÁLOGO DE PRODUTOS & SERVIÇOS
+// ==========================================
+
+app.get('/api/produtos', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM produtos WHERE user_id = ? ORDER BY id DESC',
+      [req.user.id]
+    );
+    return res.json(rows);
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao buscar catálogo de produtos.');
+  }
+});
+
+app.post('/api/produtos', authenticateToken, async (req, res) => {
+  try {
+    const { nome, categoria, descricao, preco_unitario } = req.body;
+    if (!nome || typeof nome !== 'string') {
+      return res.status(400).json({ error: 'Nome do produto/serviço é obrigatório.' });
+    }
+
+    const [result] = await pool.query(
+      `INSERT INTO produtos (user_id, nome, categoria, descricao, preco_unitario)
+       VALUES (?, ?, ?, ?, ?)`,
+      [
+        req.user.id,
+        nome.trim(),
+        categoria ? categoria.trim() : 'Geral',
+        descricao ? descricao.trim() : '',
+        parseFloat(preco_unitario) || 0.00
+      ]
+    );
+
+    return res.json({
+      id: result.insertId,
+      user_id: req.user.id,
+      nome,
+      categoria: categoria || 'Geral',
+      descricao: descricao || '',
+      preco_unitario: parseFloat(preco_unitario) || 0.00
+    });
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao criar produto/serviço.');
+  }
+});
+
+app.put('/api/produtos/:id', authenticateToken, async (req, res) => {
+  try {
+    const { nome, categoria, descricao, preco_unitario } = req.body;
+    const [result] = await pool.query(
+      `UPDATE produtos SET
+       nome = ?, categoria = ?, descricao = ?, preco_unitario = ?
+       WHERE id = ? AND user_id = ?`,
+      [
+        nome,
+        categoria || 'Geral',
+        descricao || '',
+        parseFloat(preco_unitario) || 0.00,
+        req.params.id,
+        req.user.id
+      ]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Produto não encontrado ou sem permissão.' });
+    }
+
+    return res.json({ id: req.params.id, ...req.body });
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao atualizar produto.');
+  }
+});
+
+app.delete('/api/produtos/:id', authenticateToken, async (req, res) => {
+  try {
+    const [result] = await pool.query(
+      'DELETE FROM produtos WHERE id = ? AND user_id = ?',
+      [req.params.id, req.user.id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Produto não encontrado ou sem permissão.' });
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao excluir produto.');
+  }
+});
+
+// ==========================================
+// ROTAS DA BIBLIOTECA DE CONTEÚDO (ESCOPOS/CLÁUSULAS)
+// ==========================================
+
+app.get('/api/biblioteca', authenticateToken, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM biblioteca_blocos WHERE user_id = ? ORDER BY id DESC',
+      [req.user.id]
+    );
+    return res.json(rows);
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao buscar blocos da biblioteca.');
+  }
+});
+
+app.post('/api/biblioteca', authenticateToken, async (req, res) => {
+  try {
+    const { titulo, categoria, conteudo } = req.body;
+    if (!titulo || !conteudo) {
+      return res.status(400).json({ error: 'Título e conteúdo são obrigatórios.' });
+    }
+
+    const [result] = await pool.query(
+      `INSERT INTO biblioteca_blocos (user_id, titulo, categoria, conteudo)
+       VALUES (?, ?, ?, ?)`,
+      [
+        req.user.id,
+        titulo.trim(),
+        categoria ? categoria.trim() : 'servicos',
+        conteudo.trim()
+      ]
+    );
+
+    return res.json({
+      id: result.insertId,
+      user_id: req.user.id,
+      titulo,
+      categoria: categoria || 'servicos',
+      conteudo
+    });
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao criar bloco de conteúdo.');
+  }
+});
+
+app.put('/api/biblioteca/:id', authenticateToken, async (req, res) => {
+  try {
+    const { titulo, categoria, conteudo } = req.body;
+    const [result] = await pool.query(
+      `UPDATE biblioteca_blocos SET
+       titulo = ?, categoria = ?, conteudo = ?
+       WHERE id = ? AND user_id = ?`,
+      [
+        titulo,
+        categoria || 'servicos',
+        conteudo,
+        req.params.id,
+        req.user.id
+      ]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Bloco não encontrado ou sem permissão.' });
+    }
+
+    return res.json({ id: req.params.id, ...req.body });
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao atualizar bloco de conteúdo.');
+  }
+});
+
+app.delete('/api/biblioteca/:id', authenticateToken, async (req, res) => {
+  try {
+    const [result] = await pool.query(
+      'DELETE FROM biblioteca_blocos WHERE id = ? AND user_id = ?',
+      [req.params.id, req.user.id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Bloco não encontrado ou sem permissão.' });
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao excluir bloco de conteúdo.');
   }
 });
 

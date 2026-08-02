@@ -178,79 +178,178 @@ export default function VisualizarPropostaPublica() {
           </div>
         )}
 
-        {/* Detalhes do Cliente */}
-        <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-6">
-          <h2 className="text-xs font-extrabold uppercase tracking-wider text-blue-400">Dados do Destinatário</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            <div>
-              <span className="text-slate-500 block uppercase font-bold tracking-wider text-[10px]">Cliente / Razão Social</span>
-              <span className="text-slate-200 font-bold text-sm">{proposta.nome_cliente}</span>
+        {/* Visualização de Blocos do Canvas Visual */}
+        {proposta.canvas_data?.blocks && Array.isArray(proposta.canvas_data.blocks) && proposta.canvas_data.blocks.length > 0 ? (
+          <div className="space-y-6">
+            {proposta.canvas_data.blocks.map((block) => (
+              <div key={block.id} className="space-y-4">
+                {block.type === 'cover' && (
+                  <div className={`p-8 md:p-12 rounded-lg border text-white space-y-6 shadow-2xl ${
+                    block.data?.coverTheme === 'purple'
+                      ? 'bg-gradient-to-br from-[#2e1065] to-[#0a0a0f] border-purple-900/40'
+                      : block.data?.coverTheme === 'emerald'
+                      ? 'bg-gradient-to-br from-[#064e3b] to-[#0a0a0f] border-emerald-900/40'
+                      : block.data?.coverTheme === 'slate'
+                      ? 'bg-gradient-to-br from-[#1e293b] to-[#0a0a0f] border-slate-700/40'
+                      : 'bg-gradient-to-br from-[#1b2a4a] to-[#0a0a0f] border-blue-900/40'
+                  }`}>
+                    {block.data?.logoUrl && (
+                      <div className={`flex justify-${block.data.logoAlign || 'left'}`}>
+                        <img src={block.data.logoUrl} alt="Logo" style={{ width: `${block.data.logoSize || 140}px` }} className="object-contain max-h-28 rounded p-1 bg-white/5 border border-white/10" />
+                      </div>
+                    )}
+                    <div className="space-y-2 pt-4">
+                      <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">{block.data?.title || 'PROPOSTA COMERCIAL'}</h1>
+                      <p className="text-base text-emerald-400 font-medium">{block.data?.subtitle || `Para ${proposta.nome_cliente}`}</p>
+                    </div>
+                  </div>
+                )}
+
+                {block.type === 'summary' && (
+                  <div className="p-6 rounded-lg bg-[#111118] border border-[#1e1e2e] space-y-2">
+                    <h3 className="text-base font-semibold text-white tracking-tight">{block.data?.heading}</h3>
+                    <p className="text-xs text-[#8888a0] leading-relaxed">{block.data?.content}</p>
+                  </div>
+                )}
+
+                {block.type === 'scope' && (
+                  <div className="p-6 rounded-lg bg-[#111118] border border-[#1e1e2e] space-y-3">
+                    <h3 className="text-base font-semibold text-white tracking-tight">{block.data?.heading}</h3>
+                    <ul className="space-y-2">
+                      {block.data?.items?.map((item, idx) => (
+                        <li key={idx} className="flex items-start gap-2.5 text-xs text-[#8888a0]">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {block.type === 'pricing' && (
+                  <div className="p-6 rounded-lg bg-[#111118] border border-[#1e1e2e] space-y-4">
+                    <h3 className="text-base font-semibold text-white tracking-tight">{block.data?.heading}</h3>
+                    <table className="w-full text-xs text-left">
+                      <thead>
+                        <tr className="border-b border-[#1e1e2e] text-[#555568] uppercase text-[10px]">
+                          <th className="pb-2">Descrição</th>
+                          <th className="pb-2 text-center w-20">Qtd</th>
+                          <th className="pb-2 text-right w-28">Valor Unit.</th>
+                          <th className="pb-2 text-right w-32">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#1e1e2e]">
+                        {block.data?.items?.map((item, i) => (
+                          <tr key={i}>
+                            <td className="py-2.5 text-white font-medium">{item.desc}</td>
+                            <td className="py-2.5 text-center text-[#8888a0]">{item.qty}</td>
+                            <td className="py-2.5 text-right text-[#8888a0]">R$ {(parseFloat(item.val) || 0).toFixed(2)}</td>
+                            <td className="py-2.5 text-right text-emerald-400 font-semibold">R$ {((item.qty || 0) * (item.val || 0)).toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="pt-3 border-t border-[#1e1e2e] flex items-center justify-between">
+                      <span className="text-xs text-[#555568] uppercase">Total da Proposta</span>
+                      <span className="text-2xl font-semibold text-emerald-400 tabular-nums">R$ {(parseFloat(proposta.valor_total) || 0).toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+
+                {block.type === 'terms' && (
+                  <div className="p-6 rounded-lg bg-[#111118] border border-[#1e1e2e] space-y-2">
+                    <h3 className="text-base font-semibold text-white tracking-tight">{block.data?.heading}</h3>
+                    <p className="text-xs text-[#8888a0] leading-relaxed">{block.data?.content}</p>
+                  </div>
+                )}
+
+                {block.type === 'signature' && (
+                  <div className="p-6 rounded-lg bg-[#111118] border border-[#1e1e2e] space-y-3">
+                    <h3 className="text-base font-semibold text-white tracking-tight">{block.data?.heading}</h3>
+                    <p className="text-xs text-[#8888a0]">{block.data?.terms}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Renderizador Padrão */
+          <>
+            {/* Detalhes do Cliente */}
+            <div className="p-6 rounded-lg bg-[#111118] border border-[#1e1e2e] space-y-4">
+              <h2 className="text-xs font-medium uppercase tracking-wider text-blue-400">Dados do Destinatário</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <span className="text-[#555568] block uppercase font-medium text-[10px]">Cliente / Razão Social</span>
+                  <span className="text-white font-semibold text-sm">{proposta.nome_cliente}</span>
+                </div>
+                {proposta.empresa_cliente && (
+                  <div>
+                    <span className="text-[#555568] block uppercase font-medium text-[10px]">Empresa</span>
+                    <span className="text-[#8888a0] font-medium">{proposta.empresa_cliente}</span>
+                  </div>
+                )}
+                {proposta.email_cliente && (
+                  <div>
+                    <span className="text-[#555568] block uppercase font-medium text-[10px]">E-mail de Contato</span>
+                    <span className="text-[#8888a0]">{proposta.email_cliente}</span>
+                  </div>
+                )}
+                {proposta.validade && (
+                  <div>
+                    <span className="text-[#555568] block uppercase font-medium text-[10px]">Validade da Proposta</span>
+                    <span className="text-[#8888a0] font-medium">{new Date(proposta.validade).toLocaleDateString('pt-BR')}</span>
+                  </div>
+                )}
+              </div>
             </div>
-            {proposta.empresa_cliente && (
-              <div>
-                <span className="text-slate-500 block uppercase font-bold tracking-wider text-[10px]">Empresa</span>
-                <span className="text-slate-200 font-semibold">{proposta.empresa_cliente}</span>
-              </div>
-            )}
-            {proposta.email_cliente && (
-              <div>
-                <span className="text-slate-500 block uppercase font-bold tracking-wider text-[10px]">E-mail de Contato</span>
-                <span className="text-slate-200">{proposta.email_cliente}</span>
-              </div>
-            )}
-            {proposta.validade && (
-              <div>
-                <span className="text-slate-500 block uppercase font-bold tracking-wider text-[10px]">Validade da Proposta</span>
-                <span className="text-slate-200 font-semibold">{new Date(proposta.validade).toLocaleDateString('pt-BR')}</span>
-              </div>
-            )}
-          </div>
-        </div>
 
-        {/* Escopo do Serviço */}
-        <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
-          <h2 className="text-xs font-extrabold uppercase tracking-wider text-indigo-400">Escopo & Descrição dos Serviços</h2>
-          <p className="text-xs sm:text-sm text-slate-300 whitespace-pre-wrap leading-relaxed">
-            {proposta.servico_prestado}
-          </p>
-        </div>
+            {/* Escopo do Serviço */}
+            <div className="p-6 rounded-lg bg-[#111118] border border-[#1e1e2e] space-y-3">
+              <h2 className="text-xs font-medium uppercase tracking-wider text-blue-400">Escopo & Descrição dos Serviços</h2>
+              <p className="text-xs text-[#8888a0] whitespace-pre-wrap leading-relaxed">
+                {proposta.servico_prestado}
+              </p>
+            </div>
 
-        {/* Tabela de Itens */}
-        <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-6">
-          <h2 className="text-xs font-extrabold uppercase tracking-wider text-emerald-400">Itens e Valores da Proposta</h2>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-slate-800 text-slate-400 uppercase text-[10px] tracking-wider">
-                  <th className="py-3 px-2 font-bold">Descrição do Item</th>
-                  <th className="py-3 px-2 font-bold text-center">Qtd.</th>
-                  <th className="py-3 px-2 font-bold text-right">Valor Unit.</th>
-                  <th className="py-3 px-2 font-bold text-right">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {(proposta.itens || []).map((item, idx) => (
-                  <tr key={idx} className="hover:bg-slate-800/30 transition">
-                    <td className="py-3.5 px-2 text-slate-200 font-semibold">{item.descricao || 'Item de serviço'}</td>
-                    <td className="py-3.5 px-2 text-slate-400 text-center">{item.quantidade || 1}</td>
-                    <td className="py-3.5 px-2 text-slate-400 text-right">R$ {(item.valor_unitario || 0).toFixed(2)}</td>
-                    <td className="py-3.5 px-2 text-emerald-400 font-bold text-right">
-                      R$ {((item.valor_total ?? ((item.quantidade || 1) * (item.valor_unitario || 0))) || 0).toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+            {/* Tabela de Itens */}
+            <div className="p-6 rounded-lg bg-[#111118] border border-[#1e1e2e] space-y-4">
+              <h2 className="text-xs font-medium uppercase tracking-wider text-emerald-400">Itens e Valores da Proposta</h2>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#1e1e2e] text-[#555568] uppercase text-[10px]">
+                      <th className="py-2 px-2">Descrição do Item</th>
+                      <th className="py-2 px-2 text-center w-20">Qtd.</th>
+                      <th className="py-2 px-2 text-right w-28">Valor Unit.</th>
+                      <th className="py-2 px-2 text-right w-32">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1e1e2e]">
+                    {(proposta.itens || []).map((item, idx) => (
+                      <tr key={idx}>
+                        <td className="py-3 px-2 text-white font-medium">{item.descricao || 'Item de serviço'}</td>
+                        <td className="py-3 px-2 text-[#8888a0] text-center">{item.quantidade || 1}</td>
+                        <td className="py-3 px-2 text-[#8888a0] text-right">R$ {(item.valor_unitario || 0).toFixed(2)}</td>
+                        <td className="py-3 px-2 text-emerald-400 font-semibold text-right">
+                          R$ {((item.valor_total ?? ((item.quantidade || 1) * (item.valor_unitario || 0))) || 0).toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-          <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Valor Total do Investimento</span>
-            <span className="text-3xl font-black text-emerald-400 tracking-tight">
-              R$ {(parseFloat(proposta.valor_total) || 0).toFixed(2)}
-            </span>
-          </div>
-        </div>
+              <div className="pt-3 border-t border-[#1e1e2e] flex items-center justify-between">
+                <span className="text-xs font-medium uppercase text-[#555568]">Valor Total do Investimento</span>
+                <span className="text-2xl font-semibold text-emerald-400 tracking-tight tabular-nums">
+                  R$ {(parseFloat(proposta.valor_total) || 0).toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Canal de Comentários / Dúvidas sobre a Negociação Proposify Style */}
         <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-6">

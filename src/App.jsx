@@ -319,7 +319,7 @@ function App() {
               <Route path="/planos" element={<Planos />} />
               <Route path="/chat-ia" element={<ChatIA />} />
               <Route path="/propostas" element={<Propostas />} />
-              <Route path="/propostas/criar" element={<CriarProposta />} />
+              <Route path="/propostas/criar" element={<ProposalCanvasEditor />} />
               <Route path="/propostas/canvas" element={<ProposalCanvasEditor />} />
               <Route path="/propostas/ver/:id" element={<VisualizarProposta />} />
               <Route path="/propostas/editar/:id" element={<EditarProposta />} />
