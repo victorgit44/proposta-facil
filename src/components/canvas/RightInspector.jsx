@@ -1,39 +1,53 @@
 import React from 'react';
 import {
   Sliders, Palette, Type, AlignLeft, AlignCenter, AlignRight, Upload,
-  Trash2, Plus, Copy, Lock, Unlock, Eye, Sparkles, Hash, DollarSign
+  Trash2, Plus, Copy, ArrowUp, ArrowDown, Layers, Move, RotateCw, Eye
 } from 'lucide-react';
-import { DEFAULT_VARIABLES } from './VariableEngine';
+import { fetchApi } from '@/api/supabaseClient';
 import { toast } from 'sonner';
 
 export function RightInspector({
-  selectedBlock,
-  onUpdateBlockData,
-  onDeleteBlock,
-  onDuplicateBlock,
-  onCloseInspector
+  selectedElement,
+  onUpdateElement,
+  onDeleteElement,
+  onDuplicateElement,
+  onBringForward,
+  onSendBackward,
+  onBringToFront,
+  onSendToBack
 }) {
-  if (!selectedBlock) {
+  if (!selectedElement) {
     return (
       <aside className="w-80 bg-[#111118] border-l border-[#1e1e2e] flex flex-col items-center justify-center p-6 text-center shrink-0 select-none">
         <Sliders className="w-8 h-8 text-[#555568] mb-3 animate-pulse" />
-        <h4 className="text-xs font-semibold text-white tracking-tight">Inspetor de Propriedades</h4>
-        <p className="text-[11px] text-[#8888a0] mt-1 max-w-[200px] leading-relaxed">
-          Selecione qualquer bloco no Canvas para personalizar suas propriedades, cores e dados.
+        <h4 className="text-xs font-semibold text-white tracking-tight">Inspetor de Elementos</h4>
+        <p className="text-[11px] text-[#8888a0] mt-1 max-w-[210px] leading-relaxed">
+          Clique em qualquer texto, imagem ou forma no Canvas livre para alterar coordenadas (x,y), cores, tamanhos e camadas.
         </p>
       </aside>
     );
   }
 
-  const { id, type, data = {} } = selectedBlock;
+  const { id, type, x, y, width, height, rotation, zIndex = 0, content, imageUrl, style = {} } = selectedElement;
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        onUpdateBlockData(id, 'logoUrl', reader.result);
-        toast.success('Imagem enviada com sucesso!');
+      reader.onloadend = async () => {
+        try {
+          const res = await fetchApi('/api/uploads', {
+            method: 'POST',
+            body: JSON.stringify({ dataUrl: reader.result })
+          });
+          if (res.url) {
+            onUpdateElement({ ...selectedElement, imageUrl: res.url });
+            toast.success('Imagem alterada!');
+          }
+        } catch (err) {
+          onUpdateElement({ ...selectedElement, imageUrl: reader.result });
+          toast.success('Imagem carregada!');
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -46,21 +60,21 @@ export function RightInspector({
         <div className="flex items-center gap-2">
           <Sliders className="w-4 h-4 text-blue-400" />
           <span className="text-xs font-semibold text-white capitalize">
-            Propriedades: {type}
+            Elemento: {type === 'text' ? 'Texto' : type === 'image' ? 'Imagem' : type === 'rect' ? 'Container' : type}
           </span>
         </div>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => onDuplicateBlock(id)}
+            onClick={() => onDuplicateElement(id)}
             className="p-1.5 rounded bg-[#1a1a24] text-[#8888a0] hover:text-white border border-[#1e1e2e] transition"
-            title="Duplicar Bloco (Ctrl+D)"
+            title="Duplicar Elemento"
           >
             <Copy className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => onDeleteBlock(id)}
+            onClick={() => onDeleteElement(id)}
             className="p-1.5 rounded bg-[#1a1a24] text-rose-400 hover:bg-rose-500/10 border border-[#1e1e2e] transition"
-            title="Excluir Bloco (Delete)"
+            title="Excluir Elemento"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -69,272 +83,234 @@ export function RightInspector({
 
       <div className="p-4 space-y-6">
 
-        {/* ── PROPRIEDADES DO BLOCO COVER ── */}
-        {type === 'cover' && (
-          <div className="space-y-4">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-[#555568]">Configuração da Capa</span>
+        {/* ── 1. POSICIONAMENTO E DIMENSÕES (X, Y, W, H, ROT) ── */}
+        <div className="space-y-3">
+          <span className="text-[11px] font-medium uppercase tracking-wider text-[#555568] flex items-center gap-1.5">
+            <Move className="w-3 h-3 text-blue-400" />
+            <span>Posição & Dimensões (x, y)</span>
+          </span>
 
-            {/* Tema da Capa */}
-            <div className="space-y-1.5">
-              <label className="text-xs text-[#8888a0]">Estilo do Fundo / Gradiente:</label>
-              <div className="grid grid-cols-4 gap-2">
-                {[
-                  { id: 'blue', color: 'bg-blue-600', name: 'Azul' },
-                  { id: 'purple', color: 'bg-purple-600', name: 'Roxo' },
-                  { id: 'emerald', color: 'bg-emerald-600', name: 'Verde' },
-                  { id: 'slate', color: 'bg-slate-700', name: 'Cinza' }
-                ].map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => onUpdateBlockData(id, 'coverTheme', t.id)}
-                    className={`h-8 rounded ${t.color} border border-white/20 cursor-pointer ${
-                      data.coverTheme === t.id ? 'ring-2 ring-white scale-105' : 'opacity-70 hover:opacity-100'
-                    }`}
-                    title={t.name}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <label className="text-[10px] text-[#8888a0]">Posição X (px):</label>
+              <input
+                type="number"
+                value={x}
+                onChange={(e) => onUpdateElement({ ...selectedElement, x: parseInt(e.target.value) || 0 })}
+                className="w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded px-2.5 py-1 text-xs text-white focus:border-blue-500 outline-none"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-[#8888a0]">Posição Y (px):</label>
+              <input
+                type="number"
+                value={y}
+                onChange={(e) => onUpdateElement({ ...selectedElement, y: parseInt(e.target.value) || 0 })}
+                className="w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded px-2.5 py-1 text-xs text-white focus:border-blue-500 outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <label className="text-[10px] text-[#8888a0]">Largura (W):</label>
+              <input
+                type="number"
+                value={width || 100}
+                onChange={(e) => onUpdateElement({ ...selectedElement, width: Math.max(10, parseInt(e.target.value) || 10) })}
+                className="w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded px-2.5 py-1 text-xs text-white focus:border-blue-500 outline-none"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-[#8888a0]">Altura (H):</label>
+              <input
+                type="number"
+                value={height || 50}
+                onChange={(e) => onUpdateElement({ ...selectedElement, height: Math.max(10, parseInt(e.target.value) || 10) })}
+                className="w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded px-2.5 py-1 text-xs text-white focus:border-blue-500 outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] text-[#8888a0] flex items-center gap-1">
+              <RotateCw className="w-3 h-3 text-blue-400" />
+              <span>Rotação (°):</span>
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="360"
+              value={rotation || 0}
+              onChange={(e) => onUpdateElement({ ...selectedElement, rotation: parseInt(e.target.value) || 0 })}
+              className="w-full accent-blue-600"
+            />
+          </div>
+        </div>
+
+        {/* ── 2. CONTROLE DE CAMADAS (Z-INDEX / SOBREPOSIÇÃO) ── */}
+        <div className="space-y-3 pt-3 border-t border-[#1e1e2e]">
+          <span className="text-[11px] font-medium uppercase tracking-wider text-[#555568] flex items-center gap-1.5">
+            <Layers className="w-3 h-3 text-blue-400" />
+            <span>Camadas & Sobreposição (z: {zIndex})</span>
+          </span>
+
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => onBringForward(id)}
+              className="px-2.5 py-1.5 rounded bg-[#1a1a24] hover:bg-blue-600/20 hover:border-blue-500/50 border border-[#1e1e2e] text-xs font-medium text-white transition flex items-center justify-center gap-1.5"
+            >
+              <ArrowUp className="w-3.5 h-3.5 text-blue-400" />
+              <span>Avançar Camada</span>
+            </button>
+            <button
+              onClick={() => onSendBackward(id)}
+              className="px-2.5 py-1.5 rounded bg-[#1a1a24] hover:bg-blue-600/20 hover:border-blue-500/50 border border-[#1e1e2e] text-xs font-medium text-white transition flex items-center justify-center gap-1.5"
+            >
+              <ArrowDown className="w-3.5 h-3.5 text-[#8888a0]" />
+              <span>Recuar Camada</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => onBringToFront(id)}
+              className="px-2 py-1 rounded bg-[#0a0a0f] border border-[#1e1e2e] text-[11px] text-[#8888a0] hover:text-white transition"
+            >
+              Trazer ao Topo
+            </button>
+            <button
+              onClick={() => onSendToBack(id)}
+              className="px-2 py-1 rounded bg-[#0a0a0f] border border-[#1e1e2e] text-[11px] text-[#8888a0] hover:text-white transition"
+            >
+              Enviar ao Fundo
+            </button>
+          </div>
+        </div>
+
+        {/* ── 3. EDICAO ESPECÍFICA: TEXTO ── */}
+        {type === 'text' && (
+          <div className="space-y-4 pt-3 border-t border-[#1e1e2e]">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-[#555568] flex items-center gap-1.5">
+              <Type className="w-3 h-3 text-blue-400" />
+              <span>Conteúdo & Tipografia</span>
+            </span>
+
+            {/* Conteúdo do Texto */}
+            <div className="space-y-1">
+              <label className="text-[10px] text-[#8888a0]">Texto do Elemento:</label>
+              <textarea
+                rows={3}
+                value={content || ''}
+                onChange={(e) => onUpdateElement({ ...selectedElement, content: e.target.value })}
+                className="w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded p-2 text-xs text-white focus:border-blue-500 outline-none resize-y"
+              />
+            </div>
+
+            {/* Cor do Texto & Tamanho da Fonte */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-[10px] text-[#8888a0]">Cor do Texto:</label>
+                <div className="flex items-center gap-2 bg-[#0a0a0f] border border-[#1e1e2e] rounded p-1">
+                  <input
+                    type="color"
+                    value={style.fill || '#ffffff'}
+                    onChange={(e) => onUpdateElement({ ...selectedElement, style: { ...style, fill: e.target.value } })}
+                    className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
                   />
-                ))}
-              </div>
-            </div>
-
-            {/* Título & Subtítulo */}
-            <div className="space-y-1.5">
-              <label className="text-xs text-[#8888a0]">Título da Proposta:</label>
-              <input
-                type="text"
-                value={data.title || ''}
-                onChange={(e) => onUpdateBlockData(id, 'title', e.target.value)}
-                className="w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs text-[#8888a0]">Subtítulo:</label>
-              <input
-                type="text"
-                value={data.subtitle || ''}
-                onChange={(e) => onUpdateBlockData(id, 'subtitle', e.target.value)}
-                className="w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            {/* Logotipo */}
-            <div className="space-y-2 pt-2 border-t border-[#1e1e2e]">
-              <label className="text-xs text-[#8888a0] block">Logotipo da Marca:</label>
-              <label className="w-full py-2 bg-[#1a1a24] hover:bg-white/10 border border-[#1e1e2e] rounded-lg text-xs font-medium text-[#8888a0] hover:text-white flex items-center justify-center gap-2 cursor-pointer transition">
-                <Upload className="w-3.5 h-3.5 text-blue-400" />
-                <span>{data.logoUrl ? 'Alterar Logo' : 'Enviar Logo'}</span>
-                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-              </label>
-
-              {/* Alinhamento da Logo */}
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-[11px] text-[#8888a0]">Alinhamento:</span>
-                <div className="flex items-center gap-1 bg-[#0a0a0f] p-0.5 rounded border border-[#1e1e2e]">
-                  <button
-                    onClick={() => onUpdateBlockData(id, 'logoAlign', 'left')}
-                    className={`p-1 rounded text-xs ${data.logoAlign === 'left' || !data.logoAlign ? 'bg-blue-600 text-white' : 'text-[#8888a0]'}`}
-                  >
-                    <AlignLeft className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => onUpdateBlockData(id, 'logoAlign', 'center')}
-                    className={`p-1 rounded text-xs ${data.logoAlign === 'center' ? 'bg-blue-600 text-white' : 'text-[#8888a0]'}`}
-                  >
-                    <AlignCenter className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => onUpdateBlockData(id, 'logoAlign', 'right')}
-                    className={`p-1 rounded text-xs ${data.logoAlign === 'right' ? 'bg-blue-600 text-white' : 'text-[#8888a0]'}`}
-                  >
-                    <AlignRight className="w-3.5 h-3.5" />
-                  </button>
+                  <span className="text-[10px] text-[#8888a0] uppercase font-mono">{style.fill || '#ffffff'}</span>
                 </div>
               </div>
 
-              {/* Tamanho da Logo */}
-              <div className="space-y-1 pt-1">
-                <div className="flex justify-between text-[11px] text-[#8888a0]">
-                  <span>Tamanho da Logo:</span>
-                  <span className="font-mono">{data.logoSize || 140}px</span>
-                </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-[#8888a0]">Tamanho da Fonte:</label>
                 <input
-                  type="range"
-                  min="60"
-                  max="260"
-                  value={data.logoSize || 140}
-                  onChange={(e) => onUpdateBlockData(id, 'logoSize', e.target.value)}
-                  className="w-full accent-blue-600 cursor-pointer"
+                  type="number"
+                  value={style.fontSize || 18}
+                  onChange={(e) => onUpdateElement({ ...selectedElement, style: { ...style, fontSize: parseInt(e.target.value) || 12 } })}
+                  className="w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded px-2.5 py-1 text-xs text-white focus:border-blue-500 outline-none"
                 />
               </div>
             </div>
-          </div>
-        )}
 
-        {/* ── PROPRIEDADES DO BLOCO SUMMARY / TEXT ── */}
-        {type === 'summary' && (
-          <div className="space-y-4">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-[#555568]">Configuração do Texto</span>
-
-            <div className="space-y-1.5">
-              <label className="text-xs text-[#8888a0]">Título da Seção:</label>
-              <input
-                type="text"
-                value={data.heading || ''}
-                onChange={(e) => onUpdateBlockData(id, 'heading', e.target.value)}
-                className="w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs text-[#8888a0]">Conteúdo:</label>
-              <textarea
-                rows={6}
-                value={data.content || ''}
-                onChange={(e) => onUpdateBlockData(id, 'content', e.target.value)}
-                className="w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded-lg p-3 text-xs text-white focus:outline-none focus:border-blue-500 leading-relaxed"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* ── PROPRIEDADES DO BLOCO SCOPE / CHECKLIST ── */}
-        {type === 'scope' && (
-          <div className="space-y-4">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-[#555568]">Configuração do Escopo</span>
-
-            <div className="space-y-1.5">
-              <label className="text-xs text-[#8888a0]">Título da Seção:</label>
-              <input
-                type="text"
-                value={data.heading || ''}
-                onChange={(e) => onUpdateBlockData(id, 'heading', e.target.value)}
-                className="w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs text-[#8888a0]">Tópicos do Escopo:</label>
-              {(data.items || []).map((item, idx) => (
-                <div key={idx} className="flex items-center gap-1.5">
-                  <input
-                    type="text"
-                    value={item}
-                    onChange={(e) => {
-                      const newItems = [...data.items];
-                      newItems[idx] = e.target.value;
-                      onUpdateBlockData(id, 'items', newItems);
-                    }}
-                    className="flex-1 bg-[#0a0a0f] border border-[#1e1e2e] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
-                  />
-                  <button
-                    onClick={() => {
-                      const newItems = data.items.filter((_, i) => i !== idx);
-                      onUpdateBlockData(id, 'items', newItems);
-                    }}
-                    className="p-1.5 text-rose-400 hover:bg-rose-500/10 rounded transition"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-
-              <button
-                onClick={() => {
-                  const newItems = [...(data.items || []), 'Novo entregável do projeto'];
-                  onUpdateBlockData(id, 'items', newItems);
-                }}
-                className="w-full py-2 bg-[#1a1a24] hover:bg-white/10 border border-[#1e1e2e] rounded-lg text-xs font-medium text-[#8888a0] hover:text-white transition flex items-center justify-center gap-1.5 cursor-pointer mt-2"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Adicionar Tópico</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── PROPRIEDADES DA TABELA DE PREÇOS ── */}
-        {type === 'pricing' && (
-          <div className="space-y-4">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-[#555568]">Configuração Financeira</span>
-
-            <div className="space-y-1.5">
-              <label className="text-xs text-[#8888a0]">Título da Seção:</label>
-              <input
-                type="text"
-                value={data.heading || ''}
-                onChange={(e) => onUpdateBlockData(id, 'heading', e.target.value)}
-                className="w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-xs text-[#8888a0]">Itens da Tabela:</label>
-              {(data.items || []).map((item, idx) => (
-                <div key={idx} className="p-3 rounded-lg bg-[#0a0a0f] border border-[#1e1e2e] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono text-[#555568]">Item #{idx + 1}</span>
+            {/* Alinhamento de Texto */}
+            <div className="space-y-1">
+              <label className="text-[10px] text-[#8888a0]">Alinhamento:</label>
+              <div className="flex items-center gap-1 bg-[#0a0a0f] p-1 border border-[#1e1e2e] rounded">
+                {[
+                  { id: 'left', icon: AlignLeft },
+                  { id: 'center', icon: AlignCenter },
+                  { id: 'right', icon: AlignRight }
+                ].map((item) => {
+                  const IconComponent = item.icon;
+                  return (
                     <button
-                      onClick={() => {
-                        const newItems = data.items.filter((_, i) => i !== idx);
-                        onUpdateBlockData(id, 'items', newItems);
-                      }}
-                      className="text-rose-400 hover:text-rose-300"
+                      key={item.id}
+                      onClick={() => onUpdateElement({ ...selectedElement, style: { ...style, align: item.id } })}
+                      className={`flex-1 py-1 rounded flex justify-center ${
+                        style.align === item.id ? 'bg-blue-600 text-white' : 'text-[#8888a0] hover:text-white'
+                      }`}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <IconComponent className="w-3.5 h-3.5" />
                     </button>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Descrição do Serviço"
-                    value={item.desc || ''}
-                    onChange={(e) => {
-                      const newItems = [...data.items];
-                      newItems[idx].desc = e.target.value;
-                      onUpdateBlockData(id, 'items', newItems);
-                    }}
-                    className="w-full bg-[#111118] border border-[#1e1e2e] rounded px-2.5 py-1.5 text-xs text-white focus:outline-none"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <span className="text-[10px] text-[#8888a0]">Qtd:</span>
-                      <input
-                        type="number"
-                        value={item.qty || 1}
-                        onChange={(e) => {
-                          const newItems = [...data.items];
-                          newItems[idx].qty = parseFloat(e.target.value) || 0;
-                          onUpdateBlockData(id, 'items', newItems);
-                        }}
-                        className="w-full bg-[#111118] border border-[#1e1e2e] rounded px-2 py-1 text-xs text-white focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-[#8888a0]">Valor Unit. (R$):</span>
-                      <input
-                        type="number"
-                        value={item.val || 0}
-                        onChange={(e) => {
-                          const newItems = [...data.items];
-                          newItems[idx].val = parseFloat(e.target.value) || 0;
-                          onUpdateBlockData(id, 'items', newItems);
-                        }}
-                        className="w-full bg-[#111118] border border-[#1e1e2e] rounded px-2 py-1 text-xs text-white focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
-              <button
-                onClick={() => {
-                  const newItems = [...(data.items || []), { desc: 'Novo Serviço Adicional', qty: 1, val: 1000 }];
-                  onUpdateBlockData(id, 'items', newItems);
-                }}
-                className="w-full py-2 bg-[#1a1a24] hover:bg-white/10 border border-[#1e1e2e] rounded-lg text-xs font-medium text-[#8888a0] hover:text-white transition flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Adicionar Item Financeiro</span>
-              </button>
+        {/* ── 4. EDICAO ESPECÍFICA: IMAGEM ── */}
+        {type === 'image' && (
+          <div className="space-y-4 pt-3 border-t border-[#1e1e2e]">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-[#555568]">Configurações da Imagem</span>
+
+            <div className="space-y-1">
+              <label className="text-[10px] text-[#8888a0]">Substituir Arquivo de Imagem:</label>
+              <label className="w-full py-2 border border-dashed border-[#1e1e2e] hover:border-blue-500 rounded bg-[#0a0a0f] flex items-center justify-center gap-2 cursor-pointer text-xs text-blue-400">
+                <Upload className="w-4 h-4" />
+                <span>Upload de Imagem</span>
+                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              </label>
+            </div>
+          </div>
+        )}
+
+        {/* ── 5. EDICAO ESPECÍFICA: FORMAS (RECT / CONTAINER) ── */}
+        {type === 'rect' && (
+          <div className="space-y-4 pt-3 border-t border-[#1e1e2e]">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-[#555568]">Estilo da Forma / Container</span>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-[10px] text-[#8888a0]">Preenchimento:</label>
+                <input
+                  type="color"
+                  value={style.fill || '#111118'}
+                  onChange={(e) => onUpdateElement({ ...selectedElement, style: { ...style, fill: e.target.value } })}
+                  className="w-full h-8 rounded border border-[#1e1e2e] bg-[#0a0a0f] cursor-pointer"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] text-[#8888a0]">Borda:</label>
+                <input
+                  type="color"
+                  value={style.stroke || '#1e1e2e'}
+                  onChange={(e) => onUpdateElement({ ...selectedElement, style: { ...style, stroke: e.target.value } })}
+                  className="w-full h-8 rounded border border-[#1e1e2e] bg-[#0a0a0f] cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] text-[#8888a0]">Arredondamento dos Cantos (px):</label>
+              <input
+                type="number"
+                value={style.cornerRadius || 8}
+                onChange={(e) => onUpdateElement({ ...selectedElement, style: { ...style, cornerRadius: parseInt(e.target.value) || 0 } })}
+                className="w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded px-2.5 py-1 text-xs text-white outline-none"
+              />
             </div>
           </div>
         )}

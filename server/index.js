@@ -8,6 +8,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 import dotenv from 'dotenv';
 import path from 'node:path';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import pool from './db.js';
@@ -475,6 +476,7 @@ app.get('/api/propostas/public/:id', async (req, res) => {
 
     const proposta = rows[0];
     proposta.itens = typeof proposta.itens === 'string' ? JSON.parse(proposta.itens || '[]') : (proposta.itens || []);
+    proposta.canvas_data = typeof proposta.canvas_data === 'string' ? JSON.parse(proposta.canvas_data || 'null') : (proposta.canvas_data || null);
 
     // Buscar dados públicos da empresa remetente para exibir a logomarca e informações comerciais
     let empresa = {};
@@ -1197,6 +1199,45 @@ app.get('/api/media-assets', async (req, res) => {
   }
 });
 
+// Servir uploads de imagens enviadas pelos usuários
+const uploadsPath = path.resolve(__dirname, '../uploads');
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
+}
+app.use('/uploads', express.static(uploadsPath));
+
+// Upload seguro de imagem para o Canvas (Autenticado por JWT e user_id)
+app.post('/api/uploads', authenticateToken, async (req, res) => {
+  try {
+    const { dataUrl } = req.body;
+    if (!dataUrl || typeof dataUrl !== 'string') {
+      return res.status(400).json({ error: 'Conteúdo da imagem (dataUrl) é obrigatório.' });
+    }
+
+    const matches = dataUrl.match(/^data:(image\/(png|jpeg|webp|gif|svg\+xml));base64,(.+)$/i);
+    if (!matches) {
+      return res.status(400).json({ error: 'Formato de imagem não suportado. Utilize PNG, JPEG, WEBP ou SVG.' });
+    }
+
+    const ext = matches[2] === 'svg+xml' ? 'svg' : matches[2];
+    const buffer = Buffer.from(matches[3], 'base64');
+
+    if (buffer.length > 5 * 1024 * 1024) {
+      return res.status(400).json({ error: 'O tamanho da imagem excede o limite permitido de 5MB.' });
+    }
+
+    const safeFilename = `user_${req.user.id}_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.${ext}`;
+    const filePath = path.join(uploadsPath, safeFilename);
+
+    await fs.promises.writeFile(filePath, buffer);
+
+    const publicUrl = `/uploads/${safeFilename}`;
+    return res.json({ url: publicUrl, filename: safeFilename });
+  } catch (error) {
+    return handleServerError(res, error, 'Erro ao realizar upload da imagem.');
+  }
+});
+
 // Servir arquivos estáticos do frontend (Deploy em Produção no EasyPanel)
 const distPath = path.resolve(__dirname, '../dist');
 app.use(express.static(distPath));
@@ -1209,7 +1250,7 @@ app.use((req, res, next) => {
 });
 
 // Inicialização do Servidor
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor API REST seguro rodando na porta ${PORT}`);
   initDb().catch(err => {
     console.error('❌ Falha ao verificar banco de dados:', err);

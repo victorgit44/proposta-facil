@@ -178,11 +178,97 @@ export default function VisualizarPropostaPublica() {
           </div>
         )}
 
-        {/* Visualização de Blocos do Canvas Visual */}
-        {proposta.canvas_data?.blocks && Array.isArray(proposta.canvas_data.blocks) && proposta.canvas_data.blocks.length > 0 ? (
+        {/* Visualização de Páginas com Posicionamento Livre (x, y) do Canvas Visual */}
+        {proposta.canvas_data?.pages && Array.isArray(proposta.canvas_data.pages) && proposta.canvas_data.pages.length > 0 ? (
+          <div className="space-y-8 flex flex-col items-center">
+            {proposta.canvas_data.pages.map((page, idx) => (
+              <div key={page.id || idx} className="space-y-2">
+                <div className="text-xs font-semibold text-[#8888a0] text-center uppercase tracking-wider">
+                  Página {idx + 1} de {proposta.canvas_data.pages.length}
+                </div>
+                <div className="relative shadow-2xl rounded-lg overflow-hidden border border-[#1e1e2e] bg-[#0a0a0f]" style={{ width: '800px', height: '1130px' }}>
+                  {([...(page.elements || [])]).sort((a,b) => (a.zIndex||0)-(b.zIndex||0)).map((el) => (
+                    <div
+                      key={el.id}
+                      style={{
+                        position: 'absolute',
+                        left: `${el.x}px`,
+                        top: `${el.y}px`,
+                        width: el.width ? `${el.width}px` : undefined,
+                        height: el.height ? `${el.height}px` : undefined,
+                        transform: el.rotation ? `rotate(${el.rotation}deg)` : undefined,
+                        zIndex: el.zIndex || 1,
+                        opacity: el.style?.opacity ?? 1
+                      }}
+                    >
+                      {el.type === 'text' && (
+                        <div
+                          style={{
+                            fontSize: `${el.style?.fontSize || 18}px`,
+                            fontFamily: el.style?.fontFamily || 'Inter, sans-serif',
+                            color: el.style?.fill || '#ffffff',
+                            fontWeight: el.style?.fontStyle === 'bold' ? 'bold' : 'normal',
+                            textAlign: el.style?.align || 'left',
+                            whiteSpace: 'pre-wrap'
+                          }}
+                        >
+                          {el.content}
+                        </div>
+                      )}
+
+                      {el.type === 'image' && el.imageUrl && (
+                        <img
+                          src={el.imageUrl}
+                          alt="Imagem"
+                          className="w-full h-full object-cover rounded"
+                        />
+                      )}
+
+                      {el.type === 'rect' && (
+                        <div
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            backgroundColor: el.style?.fill || '#111118',
+                            border: `${el.style?.strokeWidth || 1}px solid ${el.style?.stroke || '#1e1e2e'}`,
+                            borderRadius: `${el.style?.cornerRadius || 8}px`
+                          }}
+                        />
+                      )}
+
+                      {el.type === 'circle' && (
+                        <div
+                          style={{
+                            width: `${el.width || 100}px`,
+                            height: `${el.width || 100}px`,
+                            backgroundColor: el.style?.fill || '#2563eb',
+                            borderRadius: '50%'
+                          }}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : proposta.canvas_data?.blocks && Array.isArray(proposta.canvas_data.blocks) && proposta.canvas_data.blocks.length > 0 ? (
           <div className="space-y-6">
             {proposta.canvas_data.blocks.map((block) => (
               <div key={block.id} className="space-y-4">
+                {block.type === 'image' && (
+                  <div className="p-6 rounded-lg bg-[#111118] border border-[#1e1e2e] space-y-3">
+                    {block.data?.imageUrl && (
+                      <div className="w-full h-80 overflow-hidden rounded-lg bg-[#1a1a24] border border-white/10">
+                        <img src={block.data.imageUrl} alt={block.data.title || 'Imagem'} className="w-full h-full object-cover rounded-lg" />
+                      </div>
+                    )}
+                    {block.data?.caption && (
+                      <p className="text-xs text-[#8888a0] text-center font-medium">{block.data.caption}</p>
+                    )}
+                  </div>
+                )}
+
                 {block.type === 'cover' && (
                   <div className={`p-8 md:p-12 rounded-lg border text-white space-y-6 shadow-2xl ${
                     block.data?.coverTheme === 'purple'
