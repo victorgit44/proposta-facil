@@ -55,9 +55,7 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="flex flex-col items-center gap-4">
-          <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
-            <FileText className="w-4 h-4 text-white" />
-          </div>
+          <img src="/images/logo.webp" alt="PropostaFácil Logo" className="w-14 h-14 object-contain rounded-lg shadow-md" />
           <div className="text-center">
             <h1 className="text-lg font-semibold text-white tracking-tight">PropostaFácil</h1>
             <p className="text-[13px] text-[#555568] mt-0.5">Plataforma Comercial B2B</p>

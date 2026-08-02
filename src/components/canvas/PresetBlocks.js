@@ -26,7 +26,7 @@ export const PRESET_BLOCKS = [
       subtitle: 'Preparado especialmente para {{cliente.nome}}',
       companyName: '{{empresa.nome}}',
       clientName: '{{cliente.nome}}',
-      logoUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80',
+      logoUrl: '/images/logo.webp',
       logoAlign: 'left',
       logoSize: 140,
       coverTheme: 'blue'

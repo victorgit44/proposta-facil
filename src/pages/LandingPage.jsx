@@ -79,9 +79,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-[#1e1e2e]">
         <div className="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center">
-              <FileText className="w-3.5 h-3.5 text-white" />
-            </div>
+            <img src="/images/logo.webp" alt="PropostaFácil Logo" className="w-8 h-8 object-contain rounded-md" />
             <span className="font-semibold text-[15px] text-white tracking-tight">PropostaFácil</span>
           </div>
 

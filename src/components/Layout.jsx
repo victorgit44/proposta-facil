@@ -100,9 +100,7 @@ export default function Layout({ children }) {
         {/* Brand Header */}
         <div className="px-3 py-3 border-b border-[#1e1e2e] flex items-center justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-md bg-blue-600 flex items-center justify-center shrink-0">
-              <FileText className="w-4 h-4 text-white" />
-            </div>
+            <img src="/images/logo.webp" alt="PropostaFácil Logo" className="w-8 h-8 object-contain rounded-md shrink-0" />
             {!isCollapsed && (
               <div className="min-w-0">
                 <h2 className="text-[13px] font-semibold text-white tracking-tight truncate">PropostaFácil</h2>
@@ -167,9 +165,7 @@ export default function Layout({ children }) {
       <header className="md:hidden fixed top-0 left-0 right-0 z-40 bg-[#111118]/95 backdrop-blur-sm border-b border-[#1e1e2e] px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center">
-              <FileText className="w-3.5 h-3.5 text-white" />
-            </div>
+            <img src="/images/logo.webp" alt="PropostaFácil Logo" className="w-7 h-7 object-contain rounded-md" />
             <span className="font-semibold text-sm text-white tracking-tight">PropostaFácil</span>
           </div>
           <button
