@@ -470,10 +470,11 @@ export function ProposalCanvasEditor() {
         updatedAt: new Date().toISOString()
       };
 
+      const numProp = (proposalTitle && proposalTitle.trim()) ? proposalTitle.replace(/^Proposta\s*/i, '').trim() : '';
       const payload = {
-        numero_proposta: editId ? proposalTitle.replace('Proposta ', '') : `PROP-${Math.floor(100000 + Math.random() * 900000)}`,
-        nome_cliente: clientName,
-        email_cliente: clientEmail,
+        numero_proposta: numProp || `PROP-${Math.floor(100000 + Math.random() * 900000)}`,
+        nome_cliente: clientName || 'Cliente Contratante',
+        email_cliente: clientEmail || '',
         servico_prestado: 'Serviços Comerciais Especiais',
         valor_total: 26300,
         status: 'rascunho',
