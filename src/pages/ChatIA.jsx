@@ -126,27 +126,27 @@ export default function ChatIA() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] md:h-screen bg-slate-950 text-slate-100">
+    <div className="flex flex-col h-[calc(100vh-64px)] md:h-screen bg-[#0a0a0f] text-[#f0f0f5]">
       {/* Header Bar */}
-      <div className="bg-slate-900/80 backdrop-blur-xl border-b border-slate-800/80 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
+      <div className="bg-[#111118] border-b border-[#1e1e2e] px-6 py-4 flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <Sparkles className="w-5 h-5 text-white" />
+          <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center shadow-md">
+            <Sparkles className="w-4 h-4 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-white tracking-tight">Assistente Inteligente PropostaFácil</h1>
-              <span className="px-2 py-0.5 text-[10px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-full">
+              <h1 className="text-base font-semibold text-white tracking-tight">Assistente Inteligente PropostaFácil</h1>
+              <span className="px-2 py-0.5 text-[10px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded">
                 AI Copilot
               </span>
             </div>
-            <p className="text-xs text-slate-400">Geração de cláusulas, propostas e argumentos comerciais</p>
+            <p className="text-xs text-[#8888a0]">Geração de cláusulas, propostas e argumentos comerciais</p>
           </div>
         </div>
 
-        <div className="hidden sm:flex items-center gap-3 text-xs text-slate-400">
-          <span className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700/80">
-            <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+        <div className="hidden sm:flex items-center gap-3 text-xs text-[#8888a0]">
+          <span className="flex items-center gap-1.5 bg-[#1a1a24] px-3 py-1.5 rounded-lg border border-[#1e1e2e]">
+            <Zap className="w-3.5 h-3.5 text-amber-400" />
             <span>{assinatura.mensagens_ia_mes ?? 0} / {limits.ia} mensagens</span>
           </span>
           <Link

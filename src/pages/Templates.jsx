@@ -83,20 +83,20 @@ export default function Templates() {
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[#1e1e2e]">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Biblioteca & Templates de Documentos</h1>
-            <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase bg-amber-500/10 text-amber-300 border border-amber-500/20 rounded-md">
-              Business-in-a-Box
+            <h1 className="text-2xl font-semibold text-white tracking-tight">Biblioteca & Templates de Documentos</h1>
+            <span className="px-2 py-0.5 text-[10px] font-medium uppercase bg-amber-500/10 text-amber-300 border border-amber-500/20 rounded">
+              Modelos Prontos
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">Modelos pré-formatados de propostas comerciais e minutas contratuais prontas para uso.</p>
+          <p className="text-sm text-[#8888a0] mt-1">Modelos pré-formatados de propostas comerciais e minutas contratuais prontas para uso.</p>
         </div>
 
         <button
           onClick={() => navigate('/propostas/canvas')}
-          className="px-5 py-3 rounded-xl font-bold text-sm text-cyan-300 bg-cyan-950/80 border border-cyan-500/30 hover:bg-cyan-900/60 transition shadow-lg shadow-cyan-950/40 flex items-center gap-2 cursor-pointer shrink-0"
+          className="px-4 py-2 rounded-lg text-sm font-medium text-cyan-300 bg-cyan-950/80 border border-cyan-500/30 hover:bg-cyan-900/60 transition flex items-center gap-2 cursor-pointer shrink-0"
         >
           <Sparkles className="w-4 h-4 text-cyan-400" />
           <span>Montar no Canvas Visual</span>
@@ -109,10 +109,10 @@ export default function Templates() {
           <button
             key={cat.id}
             onClick={() => setSelectedCategory(cat.id)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition whitespace-nowrap cursor-pointer ${
               selectedCategory === cat.id
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'
+                ? 'bg-blue-600 text-white'
+                : 'bg-[#111118] border border-[#1e1e2e] text-[#8888a0] hover:text-white hover:bg-[#1a1a24]'
             }`}
           >
             {cat.label}
@@ -121,32 +121,32 @@ export default function Templates() {
       </div>
 
       {/* Grid de Modelos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredTemplates.map((template) => (
-          <div key={template.id} className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800/90 hover:border-slate-700 transition flex flex-col justify-between space-y-6 shadow-lg group">
-            <div className="space-y-4">
+          <div key={template.id} className="p-5 rounded-lg bg-[#111118] border border-[#1e1e2e] hover:border-[#2a2a3e] transition flex flex-col justify-between space-y-5 group">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="px-2.5 py-1 text-[10px] font-extrabold uppercase bg-slate-800 text-slate-300 rounded-lg">
+                <span className="px-2 py-0.5 text-[10px] font-medium uppercase bg-[#1a1a24] text-[#8888a0] rounded">
                   {template.badge}
                 </span>
-                <BookOpen className="w-4 h-4 text-slate-500" />
+                <BookOpen className="w-4 h-4 text-[#555568]" />
               </div>
 
-              <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition leading-snug">{template.title}</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">{template.description}</p>
+              <h3 className="text-base font-semibold text-white tracking-tight group-hover:text-blue-400 transition leading-snug">{template.title}</h3>
+              <p className="text-xs text-[#8888a0] leading-relaxed">{template.description}</p>
             </div>
 
-            <div className="space-y-4 pt-4 border-t border-slate-800/80">
-              <div className="flex items-center justify-between text-xs text-slate-400">
-                <span>Itens inclusos: <strong className="text-slate-200">{template.itensCount}</strong></span>
+            <div className="space-y-3 pt-3 border-t border-[#1e1e2e]">
+              <div className="flex items-center justify-between text-xs text-[#8888a0]">
+                <span>Itens inclusos: <strong className="text-white">{template.itensCount}</strong></span>
                 {template.valorSugerido > 0 && (
-                  <span className="text-emerald-400 font-bold">~R$ {template.valorSugerido.toLocaleString('pt-BR')}</span>
+                  <span className="text-emerald-400 font-semibold tabular-nums">~R$ {template.valorSugerido.toLocaleString('pt-BR')}</span>
                 )}
               </div>
 
               <button
                 onClick={() => handleUseTemplate(template)}
-                className="w-full py-3 rounded-xl font-bold text-xs uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 transition shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2 rounded-lg font-medium text-xs text-white bg-blue-600 hover:bg-blue-700 transition flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Copy className="w-4 h-4" />
                 <span>Usar Este Modelo</span>

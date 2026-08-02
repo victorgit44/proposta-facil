@@ -119,17 +119,17 @@ export default function Configuracoes() {
   return (
     <div className="p-6 md:p-10 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-300">
       {/* Header */}
-      <div className="pb-6 border-b border-slate-800/80">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+      <div className="pb-6 border-b border-[#1e1e2e]">
+        <h1 className="text-2xl font-semibold text-white tracking-tight">
           Configurações da Empresa
         </h1>
-        <p className="text-sm text-slate-400 mt-1">
+        <p className="text-sm text-[#8888a0] mt-1">
           Personalize a marca, logotipo e termos contratuais exibidos em suas propostas.
         </p>
       </div>
 
       {/* Form Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800/80 pb-3">
+      <div className="flex items-center gap-2 border-b border-[#1e1e2e] pb-3">
         {[
           { id: 'empresa', label: 'Dados da Empresa', icon: Building },
           { id: 'identidade', label: 'Logo & Marca', icon: Image },
@@ -140,10 +140,10 @@ export default function Configuracoes() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
                 activeTab === tab.id
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-[#8888a0] hover:text-white hover:bg-[#1a1a24]'
               }`}
             >
               <Icon className="w-4 h-4" />

@@ -147,52 +147,46 @@ export default function Propostas() {
         </div>
       )}
 
-      {/* KPI Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Total Propostas</span>
-            <span className="text-2xl font-black text-white">{stats.totalPropostas}</span>
-            <span className="text-xs text-slate-400 block mt-1">{stats.totalAprovadas} aprovadas</span>
+      {/* KPI Stats em estrito alinhamento com o Dashboard */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-4 rounded-lg bg-[#111118] border border-[#1e1e2e] space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-[#555568]">Total Propostas</span>
+            <FileText className="w-4 h-4 text-[#555568]" />
           </div>
-          <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400">
-            <FileText className="w-5 h-5" />
-          </div>
+          <h3 className="text-2xl font-semibold text-white tabular-nums tracking-tight">{stats.totalPropostas}</h3>
+          <p className="text-[11px] text-[#555568] font-medium">{stats.totalAprovadas} aprovadas</p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Receita Fechada</span>
-            <span className="text-2xl font-black text-emerald-400">{stats.valorTotal}</span>
-            <span className="text-xs text-slate-400 block mt-1">Em propostas aprovadas</span>
+        <div className="p-4 rounded-lg bg-[#111118] border border-[#1e1e2e] space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-[#555568]">Receita Fechada</span>
+            <DollarSign className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
-            <DollarSign className="w-5 h-5" />
-          </div>
+          <h3 className="text-2xl font-semibold text-white tabular-nums tracking-tight">{stats.valorTotal}</h3>
+          <p className="text-[11px] text-emerald-400 font-medium">Em propostas aprovadas</p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Taxa de Sucesso</span>
-            <span className="text-2xl font-black text-purple-400">{stats.taxaAprovacao}</span>
-            <span className="text-xs text-slate-400 block mt-1">Aprovação comercial</span>
+        <div className="p-4 rounded-lg bg-[#111118] border border-[#1e1e2e] space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-[#555568]">Taxa de Sucesso</span>
+            <TrendingUp className="w-4 h-4 text-blue-400" />
           </div>
-          <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400">
-            <TrendingUp className="w-5 h-5" />
-          </div>
+          <h3 className="text-2xl font-semibold text-white tabular-nums tracking-tight">{stats.taxaAprovacao}</h3>
+          <p className="text-[11px] text-[#555568] font-medium">Aprovação comercial</p>
         </div>
       </div>
 
       {/* Filter and Search controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#111118] p-4 rounded-lg border border-[#1e1e2e]">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-[#555568] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Buscar por cliente, serviço ou Nº..."
-            className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            className="w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded-lg pl-10 pr-4 py-2 text-xs text-white placeholder-[#555568] focus:outline-none focus:border-blue-600"
           />
         </div>
 
@@ -208,10 +202,10 @@ export default function Propostas() {
             <button
               key={tab.id}
               onClick={() => setStatusFilter(tab.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition whitespace-nowrap cursor-pointer ${
                 statusFilter === tab.id
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-[#8888a0] hover:text-white hover:bg-[#1a1a24]'
               }`}
             >
               {tab.label}
