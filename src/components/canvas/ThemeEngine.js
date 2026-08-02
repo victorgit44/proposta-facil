@@ -1,0 +1,110 @@
+// Engine de Temas Visuais (Corporate, Apple, Stripe, Dark, Minimal, Luxury, Tech, Emerald)
+
+export const THEMES = {
+  'dark-executive': {
+    id: 'dark-executive',
+    name: 'Executive Dark (Padrão)',
+    bg: '#0a0a0f',
+    cardBg: '#111118',
+    cardBorder: '#1e1e2e',
+    cardHover: '#2a2a3e',
+    textPrimary: '#ffffff',
+    textSecondary: '#8888a0',
+    textMuted: '#555568',
+    accent: '#2563eb',
+    accentHover: '#1d4ed8',
+    gradientCover: 'from-[#1b2a4a] via-[#111118] to-[#0a0a0f]',
+    fontFamily: 'Inter, sans-serif',
+    borderRadius: '8px',
+    shadow: 'shadow-2xl shadow-black/60'
+  },
+  'apple-minimal': {
+    id: 'apple-minimal',
+    name: 'Apple Minimal',
+    bg: '#000000',
+    cardBg: '#161618',
+    cardBorder: '#2c2c2e',
+    cardHover: '#3a3a3c',
+    textPrimary: '#f5f5f7',
+    textSecondary: '#a1a1a6',
+    textMuted: '#6e6e73',
+    accent: '#0071e3',
+    accentHover: '#0077ed',
+    gradientCover: 'from-[#1c1c1e] via-[#000000] to-[#000000]',
+    fontFamily: 'Inter, system-ui, sans-serif',
+    borderRadius: '16px',
+    shadow: 'shadow-xl shadow-black/80'
+  },
+  'stripe-sleek': {
+    id: 'stripe-sleek',
+    name: 'Stripe Sleek',
+    bg: '#0a2540',
+    cardBg: '#0f345a',
+    cardBorder: '#1a4977',
+    cardHover: '#225d97',
+    textPrimary: '#ffffff',
+    textSecondary: '#adbdcc',
+    textMuted: '#63788a',
+    accent: '#635bff',
+    accentHover: '#7a73ff',
+    gradientCover: 'from-[#635bff] via-[#0a2540] to-[#0a2540]',
+    fontFamily: 'Inter, sans-serif',
+    borderRadius: '12px',
+    shadow: 'shadow-2xl shadow-indigo-950/50'
+  },
+  'luxury-gold': {
+    id: 'luxury-gold',
+    name: 'Luxury Gold',
+    bg: '#0c0a09',
+    cardBg: '#1c1917',
+    cardBorder: '#44403c',
+    cardHover: '#78716c',
+    textPrimary: '#fafaf9',
+    textSecondary: '#d6d3d1',
+    textMuted: '#78716c',
+    accent: '#d97706',
+    accentHover: '#b45309',
+    gradientCover: 'from-[#451a03] via-[#1c1917] to-[#0c0a09]',
+    fontFamily: 'Playfair Display, Georgia, serif',
+    borderRadius: '4px',
+    shadow: 'shadow-2xl shadow-amber-950/40'
+  },
+  'tech-modern': {
+    id: 'tech-modern',
+    name: 'Tech Cyberpunk',
+    bg: '#050b14',
+    cardBg: '#0b172a',
+    cardBorder: '#1e3a8a',
+    cardHover: '#2563eb',
+    textPrimary: '#f0f9ff',
+    textSecondary: '#7dd3fc',
+    textMuted: '#38bdf8',
+    accent: '#06b6d4',
+    accentHover: '#0891b2',
+    gradientCover: 'from-[#0e7490] via-[#0b172a] to-[#050b14]',
+    fontFamily: 'JetBrains Mono, monospace',
+    borderRadius: '6px',
+    shadow: 'shadow-2xl shadow-cyan-950/50'
+  },
+  'health-emerald': {
+    id: 'health-emerald',
+    name: 'Health Emerald',
+    bg: '#022c22',
+    cardBg: '#064e3b',
+    cardBorder: '#065f46',
+    cardHover: '#047857',
+    textPrimary: '#ecfdf5',
+    textSecondary: '#a7f3d0',
+    textMuted: '#6ee7b7',
+    accent: '#10b981',
+    accentHover: '#059669',
+    gradientCover: 'from-[#065f46] via-[#064e3b] to-[#022c22]',
+    fontFamily: 'Inter, sans-serif',
+    borderRadius: '10px',
+    shadow: 'shadow-2xl shadow-emerald-950/60'
+  }
+};
+
+export function getTheme(themeId) {
+  return THEMES[themeId] || THEMES['dark-executive'];
+}
