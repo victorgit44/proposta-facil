@@ -9,6 +9,7 @@ import { LeftSidebar } from './canvas/LeftSidebar';
 import { RightInspector } from './canvas/RightInspector';
 import { FreeCanvasStage } from './canvas/FreeCanvasStage';
 import { getTheme } from './canvas/ThemeEngine';
+import { buildCanvasPagesFromTemplate } from './canvas/TemplateCanvasGenerator';
 
 // Estrutura Padrão Inicial em Folhas A4 Perfeitas (Dimensão 800x1130px por folha)
 const INITIAL_PAGES = [
@@ -254,8 +255,13 @@ export function ProposalCanvasEditor() {
         setPages(template.canvas_data.pages);
         setHistory([template.canvas_data.pages]);
         setHistoryIndex(0);
+      } else {
+        const generated = buildCanvasPagesFromTemplate(template);
+        setPages(generated.pages);
+        setHistory([generated.pages]);
+        setHistoryIndex(0);
       }
-      toast.success(`Modelo "${template.titulo}" carregado!`);
+      toast.success(`Modelo "${template.titulo}" montado no Canvas A4!`);
     }
   }, [location.state]);
 

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Stage, Layer, Text, Image as KonvaImage, Rect, Circle, Transformer, Group } from 'react-konva';
+import { Stage, Layer, Text, Image as KonvaImage, Rect, Circle, Transformer, Group, Line } from 'react-konva';
 
 // Hook auxiliar para carregar imagens assincronamente no Konva Canvas
 function useKonvaImage(url) {
@@ -20,8 +20,8 @@ function useKonvaImage(url) {
   return image;
 }
 
-// Elemento do tipo Imagem no Konva
-function EditableImage({ element, isSelected, onSelect, onChange }) {
+// Elemento do tipo Imagem no Konva com suporte a Snap
+function EditableImage({ element, isSelected, onSelect, onChange, onDragMove, onDragEnd }) {
   const image = useKonvaImage(element.imageUrl);
   const shapeRef = useRef();
 
@@ -39,13 +39,8 @@ function EditableImage({ element, isSelected, onSelect, onChange }) {
       draggable
       onClick={onSelect}
       onTap={onSelect}
-      onDragEnd={(e) => {
-        onChange({
-          ...element,
-          x: Math.round(e.target.x()),
-          y: Math.round(e.target.y())
-        });
-      }}
+      onDragMove={(e) => onDragMove(e, element)}
+      onDragEnd={(e) => onDragEnd(e, element)}
       onTransformEnd={() => {
         const node = shapeRef.current;
         const scaleX = node.scaleX();
@@ -78,6 +73,7 @@ export function FreeCanvasStage({
 }) {
   const stageRef = useRef();
   const transformerRef = useRef();
+  const [guideLines, setGuideLines] = useState([]);
 
   // Re-ordenar elementos pelo zIndex antes de desenhar na camada
   const sortedElements = [...elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
@@ -97,11 +93,101 @@ export function FreeCanvasStage({
   }, [selectedId, elements]);
 
   const handleStageClick = (e) => {
-    // Se clicou no fundo do palco ou na área vazia, desseleciona
     const clickedOnEmpty = e.target === e.target.getStage() || e.target.name() === 'background-rect';
     if (clickedOnEmpty) {
       onSelectElement(null);
     }
+  };
+
+  // Motor Magnético de Alinhamento (Smart Guides estilo Canva / Figma)
+  const SNAP_THRESHOLD = 6;
+
+  const handleDragMove = (e, draggedElement) => {
+    const node = e.target;
+    let nodeX = node.x();
+    let nodeY = node.y();
+    const nodeW = draggedElement.width || node.width() || 100;
+    const nodeH = draggedElement.height || node.height() || 50;
+
+    const newGuideLines = [];
+
+    // Alvos de alinhamento da folha A4 (Margens 40px e Centro)
+    const targetsX = [
+      { pos: 40 },
+      { pos: width / 2 },
+      { pos: width - 40 }
+    ];
+
+    const targetsY = [
+      { pos: 40 },
+      { pos: height / 2 },
+      { pos: height - 40 }
+    ];
+
+    // Adicionar posições de outros elementos da página
+    elements.forEach((other) => {
+      if (other.id === draggedElement.id) return;
+      const oX = other.x;
+      const oY = other.y;
+      const oW = other.width || 100;
+      const oH = other.height || 50;
+
+      targetsX.push({ pos: oX }, { pos: oX + oW / 2 }, { pos: oX + oW });
+      targetsY.push({ pos: oY }, { pos: oY + oH / 2 }, { pos: oY + oH });
+    });
+
+    // Testar alinhamento no eixo X (Linha Vertical)
+    const nodeXPoints = [
+      { val: nodeX, offset: 0 },
+      { val: nodeX + nodeW / 2, offset: nodeW / 2 },
+      { val: nodeX + nodeW, offset: nodeW }
+    ];
+
+    let snappedX = false;
+    for (let target of targetsX) {
+      for (let pt of nodeXPoints) {
+        if (Math.abs(pt.val - target.pos) < SNAP_THRESHOLD) {
+          nodeX = target.pos - pt.offset;
+          node.x(nodeX);
+          newGuideLines.push({ type: 'v', pos: target.pos });
+          snappedX = true;
+          break;
+        }
+      }
+      if (snappedX) break;
+    }
+
+    // Testar alinhamento no eixo Y (Linha Horizontal)
+    const nodeYPoints = [
+      { val: nodeY, offset: 0 },
+      { val: nodeY + nodeH / 2, offset: nodeH / 2 },
+      { val: nodeY + nodeH, offset: nodeH }
+    ];
+
+    let snappedY = false;
+    for (let target of targetsY) {
+      for (let pt of nodeYPoints) {
+        if (Math.abs(pt.val - target.pos) < SNAP_THRESHOLD) {
+          nodeY = target.pos - pt.offset;
+          node.y(nodeY);
+          newGuideLines.push({ type: 'h', pos: target.pos });
+          snappedY = true;
+          break;
+        }
+      }
+      if (snappedY) break;
+    }
+
+    setGuideLines(newGuideLines);
+  };
+
+  const handleDragEnd = (e, draggedElement) => {
+    setGuideLines([]);
+    onChangeElement({
+      ...draggedElement,
+      x: Math.round(e.target.x()),
+      y: Math.round(e.target.y())
+    });
   };
 
   return (
@@ -160,13 +246,8 @@ export function FreeCanvasStage({
                   draggable
                   onClick={() => onSelectElement(el.id)}
                   onTap={() => onSelectElement(el.id)}
-                  onDragEnd={(e) => {
-                    onChangeElement({
-                      ...el,
-                      x: Math.round(e.target.x()),
-                      y: Math.round(e.target.y())
-                    });
-                  }}
+                  onDragMove={(e) => handleDragMove(e, el)}
+                  onDragEnd={(e) => handleDragEnd(e, el)}
                   onTransformEnd={(e) => {
                     const node = e.target;
                     const scaleX = node.scaleX();
@@ -193,6 +274,8 @@ export function FreeCanvasStage({
                   isSelected={isSelected}
                   onSelect={() => onSelectElement(el.id)}
                   onChange={onChangeElement}
+                  onDragMove={handleDragMove}
+                  onDragEnd={handleDragEnd}
                 />
               );
             }
@@ -216,13 +299,8 @@ export function FreeCanvasStage({
                   draggable
                   onClick={() => onSelectElement(el.id)}
                   onTap={() => onSelectElement(el.id)}
-                  onDragEnd={(e) => {
-                    onChangeElement({
-                      ...el,
-                      x: Math.round(e.target.x()),
-                      y: Math.round(e.target.y())
-                    });
-                  }}
+                  onDragMove={(e) => handleDragMove(e, el)}
+                  onDragEnd={(e) => handleDragEnd(e, el)}
                   onTransformEnd={(e) => {
                     const node = e.target;
                     const scaleX = node.scaleX();
@@ -259,13 +337,8 @@ export function FreeCanvasStage({
                   draggable
                   onClick={() => onSelectElement(el.id)}
                   onTap={() => onSelectElement(el.id)}
-                  onDragEnd={(e) => {
-                    onChangeElement({
-                      ...el,
-                      x: Math.round(e.target.x()),
-                      y: Math.round(e.target.y())
-                    });
-                  }}
+                  onDragMove={(e) => handleDragMove(e, el)}
+                  onDragEnd={(e) => handleDragEnd(e, el)}
                   onTransformEnd={(e) => {
                     const node = e.target;
                     const scaleX = node.scaleX();
@@ -284,6 +357,30 @@ export function FreeCanvasStage({
             }
 
             return null;
+          })}
+
+          {/* Linhas Guia Magnéticas de Alinhamento (Canva / Figma Style) */}
+          {guideLines.map((line, idx) => {
+            if (line.type === 'v') {
+              return (
+                <Line
+                  key={`v-guide-${idx}`}
+                  points={[line.pos, 0, line.pos, height]}
+                  stroke="#ec4899"
+                  strokeWidth={1.5}
+                  dash={[4, 4]}
+                />
+              );
+            }
+            return (
+              <Line
+                key={`h-guide-${idx}`}
+                points={[0, line.pos, width, line.pos]}
+                stroke="#ec4899"
+                strokeWidth={1.5}
+                dash={[4, 4]}
+              />
+            );
           })}
 
           {/* Transformador Gráfico (Handles para Redimensionar e Rotacionar) */}

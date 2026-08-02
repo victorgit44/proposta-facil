@@ -312,13 +312,23 @@ export async function initDb() {
         ];
 
         for (const t of defaultTemplates) {
+          const canvasData = generateA4CanvasPages(t);
           await connection.query(
-            `INSERT INTO templates_preset (slug, titulo, categoria, badge, descricao, valor_sugerido, servico, itens_count, cover_theme)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [t.slug, t.titulo, t.categoria, t.badge, t.descricao, t.valor_sugerido, t.servico, t.itens_count, t.cover_theme]
+            `INSERT INTO templates_preset (slug, titulo, categoria, badge, descricao, valor_sugerido, servico, itens_count, cover_theme, canvas_data)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [t.slug, t.titulo, t.categoria, t.badge, t.descricao, t.valor_sugerido, t.servico, t.itens_count, t.cover_theme, JSON.stringify(canvasData)]
           );
         }
       }
+
+      // Garantir que todos os templates existentes no banco tenham canvas_data no padrão A4 livre
+      try {
+        const [templates] = await connection.query('SELECT id, titulo, servico, descricao, valor_sugerido, cover_theme FROM templates_preset');
+        for (const t of templates) {
+          const canvasData = generateA4CanvasPages(t);
+          await connection.query('UPDATE templates_preset SET canvas_data = ? WHERE id = ?', [JSON.stringify(canvasData), t.id]);
+        }
+      } catch (e) {}
 
       // ── Seeding Automático de Media Assets (Imagens HD) ──
       const [existingMedia] = await connection.query('SELECT COUNT(*) as count FROM media_assets');

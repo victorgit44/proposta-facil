@@ -146,6 +146,39 @@ export function RightInspector({
               className="w-full accent-blue-600"
             />
           </div>
+
+          {/* Botões de Alinhamento Automático Estilo Canva */}
+          <div className="space-y-1 pt-2">
+            <label className="text-[10px] text-[#8888a0]">Alinhamento Automático na Folha A4:</label>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                onClick={() => onUpdateElement({ ...selectedElement, x: Math.round((800 - (width || 100)) / 2) })}
+                className="px-2 py-1 rounded bg-[#0a0a0f] border border-[#1e1e2e] text-[10px] font-medium text-white hover:bg-blue-600/20 hover:border-blue-500/50 transition cursor-pointer"
+                title="Centralizar no centro horizontal da folha"
+              >
+                ↔ Centralizar X
+              </button>
+              <button
+                onClick={() => onUpdateElement({ ...selectedElement, y: Math.round((1130 - (height || 50)) / 2) })}
+                className="px-2 py-1 rounded bg-[#0a0a0f] border border-[#1e1e2e] text-[10px] font-medium text-white hover:bg-blue-600/20 hover:border-blue-500/50 transition cursor-pointer"
+                title="Centralizar no centro vertical da folha"
+              >
+                ↕ Centralizar Y
+              </button>
+              <button
+                onClick={() => onUpdateElement({ ...selectedElement, x: 40 })}
+                className="px-2 py-1 rounded bg-[#0a0a0f] border border-[#1e1e2e] text-[10px] text-[#8888a0] hover:text-white transition cursor-pointer"
+              >
+                ← Margem Esquerda
+              </button>
+              <button
+                onClick={() => onUpdateElement({ ...selectedElement, x: 760 - (width || 100) })}
+                className="px-2 py-1 rounded bg-[#0a0a0f] border border-[#1e1e2e] text-[10px] text-[#8888a0] hover:text-white transition cursor-pointer"
+              >
+                Margem Direita →
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* ── 2. CONTROLE DE CAMADAS (Z-INDEX / SOBREPOSIÇÃO) ── */}
